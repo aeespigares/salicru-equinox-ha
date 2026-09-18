@@ -3,11 +3,12 @@ FROM ghcr.io/home-assistant/base:latest
 RUN \
     apk add --no-cache \
         python3 \
-        py3-pip
+        py3-pip \
+        python3-dev
 
-COPY requirements.txt /app/requirements.txt
-
-RUN pip3 install --no-cache-dir -r /app/requirements.txt
+RUN \
+    python3 -m venv /opt/venv && \
+    /opt/venv/bin/pip install --no-cache-dir paho-mqtt
 
 COPY run.py /app/run.py
 COPY run.sh /run.sh
