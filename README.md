@@ -1,15 +1,6 @@
 # Salicru EQUINOX para Home Assistant
 <p align="left">
-  <table>
-             <tr style="border: none;">
-                        <td>
-                                   <img src="salicru_equinox/icon.png" alt="Salicru EQUINOX" width="160">
-                        </td>
-                        <td>
-                                   <span>Integración para Home Assistant de inversores Salicru EQUINOX</span>
-                        </td>
-             </tr>
-  </table>
+  <img src="logo.png" alt="Salicru EQUINOX" width="400">
 </p>
 
 App para [Home Assistant](https://www.home-assistant.io/) que permite integrar inversores Salicru conectados a la plataforma [EQUINOX](https://equinox.salicru.com/).
