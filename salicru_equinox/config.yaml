@@ -1,5 +1,5 @@
 name: Salicru EQUINOX
-version: "1.0.0"
+version: "1.0.1"
 slug: salicru_equinox
 description: Monitorización de inversores Salicru EQUINOX mediante la plataforma EQUINOX
 url: https://equinox.salicru.com
@@ -12,6 +12,9 @@ arch:
   - amd64
   - aarch64
   - armv7
+
+services:
+  - mqtt:need
 
 options:
   email: null
