@@ -1,0 +1,26 @@
+name: Salicru EQUINOX
+version: "1.0.0"
+slug: salicru_equinox
+description: Monitorización de inversores Salicru EQUINOX mediante la plataforma EQUINOX
+url: https://equinox.salicru.com
+
+startup: application
+boot: auto
+init: false
+
+arch:
+  - amd64
+  - aarch64
+  - armv7
+
+options:
+  email: null
+  password: null
+  plant_id: null
+  poll_interval: 900
+
+schema:
+  email: str
+  password: password
+  plant_id: str
+  poll_interval: int
