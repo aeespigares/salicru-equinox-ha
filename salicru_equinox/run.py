@@ -1,204 +1,194 @@
+#!/usr/bin/env python3
+
 import json
 import logging
 import os
 import time
-import http.cookiejar
-import urllib.error
-import urllib.parse
-import urllib.request
+from http.cookiejar import CookieJar
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import Request, build_opener
 
 import paho.mqtt.client as mqtt
 
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(message)s",
+    format="%(asctime)s [%(levelname)s] %(message)s",
 )
 
-log = logging.getLogger("salicru")
+LOGGER = logging.getLogger("salicru-equinox")
+
+OPTIONS_FILE = "/data/options.json"
+
+EQUINOX_WEB = "https://equinox.salicru.com"
+EQUINOX_API = "https://api.equinox.salicru.com"
+
+MQTT_DISCOVERY_PREFIX = "homeassistant"
 
 
-BASE_URL = "https://equinox.salicru.com"
-API_URL = "https://api.equinox.salicru.com"
+def load_options():
+    with open(OPTIONS_FILE, "r", encoding="utf-8") as file:
+        options = json.load(file)
 
-EMAIL = os.environ["SALICRU_EMAIL"]
-PASSWORD = os.environ["SALICRU_PASSWORD"]
-PLANT_ID = os.environ["PLANT_ID"]
+    return {
+        "email": options["email"],
+        "password": options["password"],
+        "plant_id": str(options["plant_id"]),
+        "poll_interval": int(options.get("poll_interval", 900)),
+    }
 
-POLL_INTERVAL = int(
-    os.environ.get("POLL_INTERVAL", "900")
-)
 
-MQTT_HOST = os.environ.get(
-    "MQTT_HOST",
-    "core-mosquitto",
-)
+OPTIONS = load_options()
 
-MQTT_PORT = int(
-    os.environ.get("MQTT_PORT", "1883")
-)
+EMAIL = OPTIONS["email"]
+PASSWORD = OPTIONS["password"]
+PLANT_ID = OPTIONS["plant_id"]
+POLL_INTERVAL = OPTIONS["poll_interval"]
 
-MQTT_USER = os.environ.get("MQTT_USER")
-MQTT_PASSWORD = os.environ.get("MQTT_PASSWORD")
+MQTT_HOST = os.environ.get("MQTT_HOST", "")
+MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
+MQTT_USER = os.environ.get("MQTT_USER", "")
+MQTT_PASSWORD = os.environ.get("MQTT_PASSWORD", "")
 
 STATE_TOPIC = f"salicru/{PLANT_ID}/state"
 AVAILABILITY_TOPIC = f"salicru/{PLANT_ID}/availability"
 
-DISCOVERY_PREFIX = "homeassistant"
+OPENER = build_opener(CookieJar())
 
-DEVICE_ID = f"salicru_equinox_{PLANT_ID}"
+TOKEN = None
 
 
-class SalicruClient:
+def http_request(url, method="GET", data=None, headers=None):
+    request_headers = {
+        "User-Agent": "Home Assistant Salicru EQUINOX",
+    }
 
-    def __init__(self):
-        self.cookies = http.cookiejar.CookieJar()
-        self.token = None
+    if headers:
+        request_headers.update(headers)
 
-        self.opener = urllib.request.build_opener(
-            urllib.request.HTTPCookieProcessor(
-                self.cookies
-            )
+    body = None
+
+    if data is not None:
+        body = urlencode(data).encode("utf-8")
+
+        request_headers["Content-Type"] = (
+            "application/x-www-form-urlencoded"
         )
 
-    def request(
-        self,
+    request = Request(
         url,
-        method="GET",
-        data=None,
-        headers=None,
-    ):
-        request_headers = headers or {}
+        data=body,
+        headers=request_headers,
+        method=method,
+    )
 
-        req = urllib.request.Request(
+    return OPENER.open(request, timeout=30)
+
+
+def login():
+    global TOKEN
+
+    LOGGER.info("Obteniendo CSRF de EQUINOX...")
+
+    response = http_request(
+        f"{EQUINOX_WEB}/api/auth/csrf"
+    )
+
+    csrf_data = json.loads(
+        response.read().decode("utf-8")
+    )
+
+    csrf_token = csrf_data["csrfToken"]
+
+    LOGGER.info("Iniciando sesión en EQUINOX...")
+
+    login_data = {
+        "email": EMAIL,
+        "password": PASSWORD,
+        "redirect": "false",
+        "csrfToken": csrf_token,
+        "callbackUrl": f"{EQUINOX_WEB}/",
+        "json": "true",
+    }
+
+    response = http_request(
+        f"{EQUINOX_WEB}/api/auth/callback/credentials",
+        method="POST",
+        data=login_data,
+        headers={
+            "Origin": EQUINOX_WEB,
+            "Referer": f"{EQUINOX_WEB}/login",
+        },
+    )
+
+    # El token que necesitamos se guarda como cookie raw-token.
+    for cookie in OPENER.handlers[0].cookiejar:
+        if cookie.name == "raw-token":
+            TOKEN = cookie.value
+            break
+
+    if not TOKEN:
+        raise RuntimeError(
+            "Login correcto pero no se encontró la cookie raw-token."
+        )
+
+    LOGGER.info("Autenticación EQUINOX correcta.")
+
+
+def get_realtime():
+    if not TOKEN:
+        login()
+
+    url = f"{EQUINOX_API}/plants/{PLANT_ID}/realTime"
+
+    try:
+        response = http_request(
             url,
-            data=data,
-            headers=request_headers,
-            method=method,
-        )
-
-        return self.opener.open(
-            req,
-            timeout=30,
-        )
-
-    def login(self):
-
-        log.info("Obteniendo CSRF token...")
-
-        response = self.request(
-            f"{BASE_URL}/api/auth/csrf"
-        )
-
-        csrf_data = json.loads(
-            response.read().decode()
-        )
-
-        csrf_token = csrf_data["csrfToken"]
-
-        log.info("Iniciando sesión en EQUINOX...")
-
-        payload = urllib.parse.urlencode({
-            "email": EMAIL,
-            "password": PASSWORD,
-            "redirect": "false",
-            "csrfToken": csrf_token,
-            "callbackUrl": f"{BASE_URL}/",
-            "json": "false",
-        }).encode()
-
-        response = self.request(
-            f"{BASE_URL}/api/auth/callback/credentials",
-            method="POST",
-            data=payload,
             headers={
-                "Content-Type":
-                    "application/x-www-form-urlencoded",
+                "Authorization": f"Bearer {TOKEN}",
+                "Platform-Referer": "EquinoxWeb",
             },
         )
 
-        log.info(
-            "Respuesta de login: HTTP %s",
-            response.status,
+        return json.loads(
+            response.read().decode("utf-8")
         )
 
-        self.token = None
-
-        for cookie in self.cookies:
-            if cookie.name == "raw-token":
-                self.token = cookie.value
-                break
-
-        if not self.token:
-            raise RuntimeError(
-                "Login realizado pero no se encontró raw-token"
+    except HTTPError as error:
+        if error.code == 401:
+            LOGGER.warning(
+                "El token EQUINOX ha expirado. Renovando sesión..."
             )
 
-        log.info("Token EQUINOX obtenido correctamente")
+            TOKEN_RESET()
 
-    def get_realtime(self):
+            login()
 
-        if not self.token:
-            self.login()
-
-        url = (
-            f"{API_URL}/plants/"
-            f"{PLANT_ID}/realTime"
-        )
-
-        try:
-
-            response = self.request(
+            response = http_request(
                 url,
                 headers={
-                    "Authorization":
-                        f"Bearer {self.token}",
-                    "Platform-Referer":
-                        "EquinoxWeb",
-                    "Content-Type":
-                        "application/json",
+                    "Authorization": f"Bearer {TOKEN}",
+                    "Platform-Referer": "EquinoxWeb",
                 },
             )
 
             return json.loads(
-                response.read().decode()
+                response.read().decode("utf-8")
             )
 
-        except urllib.error.HTTPError as error:
-
-            if error.code == 401:
-
-                log.warning(
-                    "El token ha caducado. Renovando..."
-                )
-
-                self.token = None
-
-                self.login()
-
-                response = self.request(
-                    url,
-                    headers={
-                        "Authorization":
-                            f"Bearer {self.token}",
-                        "Platform-Referer":
-                            "EquinoxWeb",
-                        "Content-Type":
-                            "application/json",
-                    },
-                )
-
-                return json.loads(
-                    response.read().decode()
-                )
-
-            raise
+        raise
 
 
-def connect_mqtt():
+def TOKEN_RESET():
+    global TOKEN
+    TOKEN = None
 
+
+def mqtt_connect():
     client = mqtt.Client(
-        mqtt.CallbackAPIVersion.VERSION2
+        mqtt.CallbackAPIVersion.VERSION2,
+        client_id=f"salicru_equinox_{PLANT_ID}",
     )
 
     if MQTT_USER:
@@ -207,7 +197,7 @@ def connect_mqtt():
             MQTT_PASSWORD,
         )
 
-    log.info(
+    LOGGER.info(
         "Conectando a MQTT %s:%s",
         MQTT_HOST,
         MQTT_PORT,
@@ -225,158 +215,163 @@ def connect_mqtt():
 
 
 def publish_discovery(client):
-
     device = {
-        "identifiers": [DEVICE_ID],
+        "identifiers": [f"salicru_equinox_{PLANT_ID}"],
         "name": "Salicru EQUINOX",
         "manufacturer": "Salicru",
         "model": "EQUINOX",
     }
 
-    origin = {
-        "name": "Salicru EQUINOX App",
-        "sw_version": "1.0.0",
-        "support_url": "https://equinox.salicru.com",
-    }
-
-    components = {}
-
     sensors = {
+        "inverter_power": {
+            "name": "Potencia inversor",
+            "unit": "kW",
+        },
         "daily_generation": {
-            "name": "Producción diaria",
+            "name": "Generación diaria",
             "unit": "kWh",
-            "device_class": "energy",
-            "state_class": "total_increasing",
         },
         "daily_consumption": {
             "name": "Consumo diario",
             "unit": "kWh",
-            "device_class": "energy",
-            "state_class": "total_increasing",
         },
         "import_energy": {
             "name": "Energía importada",
             "unit": "kWh",
-            "device_class": "energy",
-            "state_class": "total_increasing",
         },
         "export_energy": {
             "name": "Energía exportada",
             "unit": "kWh",
-            "device_class": "energy",
-            "state_class": "total_increasing",
         },
         "self_consumption": {
-            "name": "Autoconsumo diario",
+            "name": "Autoconsumo",
             "unit": "kWh",
-            "device_class": "energy",
-            "state_class": "total_increasing",
-        },
-        "inverter_power": {
-            "name": "Potencia inversor",
-            "unit": "kW",
-            "device_class": "power",
-            "state_class": "measurement",
-        },
-        "power_generation": {
-            "name": "Potencia generación",
-            "unit": "kW",
-            "device_class": "power",
-            "state_class": "measurement",
         },
         "grid_power": {
             "name": "Potencia red",
             "unit": "kW",
-            "device_class": "power",
-            "state_class": "measurement",
         },
-        "co2": {
-            "name": "CO₂ evitado",
-            "unit": "kg",
-            "device_class": "weight",
-            "state_class": "total_increasing",
+        "alarm_count": {
+            "name": "Número de alarmas",
+            "unit": None,
+        },
+        "last_update": {
+            "name": "Última actualización",
+            "unit": None,
         },
     }
 
     for key, config in sensors.items():
-
-        component = {
-            "p": "sensor",
-            "name": config["name"],
-            "unique_id": f"{DEVICE_ID}_{key}",
-            "state_topic": STATE_TOPIC,
-            "value_template":
-                f"{{{{ value_json.{key} }}}}",
-            "device": device,
-            "origin": origin,
-        }
-
-        if "unit" in config:
-            component["unit_of_measurement"] = config["unit"]
-
-        if "device_class" in config:
-            component["device_class"] = config["device_class"]
-
-        if "state_class" in config:
-            component["state_class"] = config["state_class"]
-
-        topic = (
-            f"{DISCOVERY_PREFIX}/sensor/"
-            f"{DEVICE_ID}/{key}/config"
+        discovery_topic = (
+            f"{MQTT_DISCOVERY_PREFIX}/sensor/"
+            f"salicru_{PLANT_ID}/{key}/config"
         )
 
+        payload = {
+            "name": config["name"],
+            "unique_id": f"salicru_{PLANT_ID}_{key}",
+            "state_topic": STATE_TOPIC,
+            "value_template": f"{{{{ value_json.{key} }}}}",
+            "availability_topic": AVAILABILITY_TOPIC,
+            "device": device,
+        }
+
+        if config["unit"]:
+            payload["unit_of_measurement"] = config["unit"]
+
+        if key == "last_update":
+            payload["device_class"] = "timestamp"
+            payload["value_template"] = (
+                "{{ value_json.last_update }}"
+            )
+
         client.publish(
-            topic,
-            json.dumps(component),
+            discovery_topic,
+            json.dumps(payload),
             retain=True,
         )
 
-    log.info("MQTT Discovery publicado")
-
-
-def publish_state(client, data):
-
-    inverter_power = None
-
-    inverters = data.get(
-        "invertersProps",
-        [],
+    # Sensor de alarmas en texto.
+    discovery_topic = (
+        f"{MQTT_DISCOVERY_PREFIX}/sensor/"
+        f"salicru_{PLANT_ID}/alarms/config"
     )
 
-    if inverters:
-        inverter_power = inverters[0].get(
+    payload = {
+        "name": "Alarmas inversor",
+        "unique_id": f"salicru_{PLANT_ID}_alarms",
+        "state_topic": STATE_TOPIC,
+        "value_template": "{{ value_json.alarms }}",
+        "availability_topic": AVAILABILITY_TOPIC,
+        "device": device,
+    }
+
+    client.publish(
+        discovery_topic,
+        json.dumps(payload),
+        retain=True,
+    )
+
+    # Sensor de comunicación con EQUINOX.
+    discovery_topic = (
+        f"{MQTT_DISCOVERY_PREFIX}/binary_sensor/"
+        f"salicru_{PLANT_ID}/api_ok/config"
+    )
+
+    payload = {
+        "name": "Comunicación EQUINOX",
+        "unique_id": f"salicru_{PLANT_ID}_api_ok",
+        "state_topic": STATE_TOPIC,
+        "value_template": "{{ value_json.api_ok }}",
+        "payload_on": "ON",
+        "payload_off": "OFF",
+        "device_class": "connectivity",
+        "availability_topic": AVAILABILITY_TOPIC,
+        "device": device,
+    }
+
+    client.publish(
+        discovery_topic,
+        json.dumps(payload),
+        retain=True,
+    )
+
+
+def extract_data(data):
+    inverter_power = None
+
+    if data.get("invertersProps"):
+        inverter_power = data["invertersProps"][0].get(
             "outputPower"
         )
 
-    state = {
-        "daily_generation":
-            data.get("dailyGeneration"),
+    alarms = data.get("inverterAlarms") or []
 
-        "daily_consumption":
-            data.get("dailyConsumption"),
+    if isinstance(alarms, list):
+        alarm_text = ", ".join(str(x) for x in alarms)
+        alarm_count = len(alarms)
+    else:
+        alarm_text = str(alarms)
+        alarm_count = 0
 
-        "import_energy":
-            data.get("importEnergy"),
-
-        "export_energy":
-            data.get("exportEnergy"),
-
-        "self_consumption":
-            data.get("selfConsumption"),
-
-        "inverter_power":
-            inverter_power,
-
-        "power_generation":
-            data.get("powerDailyGeneration"),
-
-        "grid_power":
-            data.get("gridPower"),
-
-        "co2":
-            data.get("co2"),
+    return {
+        "inverter_power": inverter_power,
+        "daily_generation": data.get("dailyGeneration"),
+        "daily_consumption": data.get("dailyConsumption"),
+        "import_energy": data.get("importEnergy"),
+        "export_energy": data.get("exportEnergy"),
+        "self_consumption": data.get("selfConsumption"),
+        "grid_power": data.get("gridPower"),
+        "alarm_count": alarm_count,
+        "alarms": alarm_text,
+        "last_update": time.strftime(
+            "%Y-%m-%dT%H:%M:%S%z"
+        ),
+        "api_ok": "ON",
     }
 
+
+def publish_state(client, state):
     client.publish(
         STATE_TOPIC,
         json.dumps(state),
@@ -389,39 +384,40 @@ def publish_state(client, data):
         retain=True,
     )
 
-    log.info(
-        "Datos publicados: potencia inversor=%s kW",
-        inverter_power,
-    )
-
 
 def main():
-
-    log.info(
-        "Iniciando Salicru EQUINOX para planta %s",
+    LOGGER.info(
+        "Iniciando Salicru EQUINOX - planta %s",
         PLANT_ID,
     )
 
-    salicru = SalicruClient()
+    LOGGER.info(
+        "Intervalo de consulta: %s segundos",
+        POLL_INTERVAL,
+    )
 
-    mqtt_client = connect_mqtt()
+    mqtt_client = mqtt_connect()
 
     publish_discovery(mqtt_client)
 
     while True:
-
         try:
+            data = get_realtime()
 
-            data = salicru.get_realtime()
+            state = extract_data(data)
 
             publish_state(
                 mqtt_client,
-                data,
+                state,
+            )
+
+            LOGGER.info(
+                "EQUINOX OK - potencia inversor: %s kW",
+                state["inverter_power"],
             )
 
         except Exception as error:
-
-            log.exception(
+            LOGGER.error(
                 "Error consultando EQUINOX: %s",
                 error,
             )
@@ -434,8 +430,6 @@ def main():
                 )
             except Exception:
                 pass
-
-            salicru.token = None
 
         time.sleep(POLL_INTERVAL)
 
