@@ -5,4 +5,4 @@ export MQTT_PORT="$(bashio::services mqtt 'port')"
 export MQTT_USER="$(bashio::services mqtt 'username')"
 export MQTT_PASSWORD="$(bashio::services mqtt 'password')"
 
-exec python3 /app/run.py
+exec /opt/venv/bin/python /app/run.py
