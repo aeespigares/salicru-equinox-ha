@@ -7,7 +7,12 @@ import time
 from http.cookiejar import CookieJar
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
-from urllib.request import Request, build_opener
+from urllib.request import (
+    build_opener,
+    Request,
+    urlopen,
+    HTTPCookieProcessor,
+)
 
 import paho.mqtt.client as mqtt
 
@@ -54,7 +59,8 @@ MQTT_PASSWORD = os.environ.get("MQTT_PASSWORD", "")
 STATE_TOPIC = f"salicru/{PLANT_ID}/state"
 AVAILABILITY_TOPIC = f"salicru/{PLANT_ID}/availability"
 
-OPENER = build_opener(CookieJar())
+COOKIE_JAR = CookieJar()
+OPENER = build_opener(HTTPCookieProcessor(COOKIE_JAR))
 
 TOKEN = None
 
@@ -123,7 +129,7 @@ def login():
     )
 
     # El token que necesitamos se guarda como cookie raw-token.
-    for cookie in OPENER.handlers[0].cookiejar:
+    for cookie in COOKIE_JAR:
         if cookie.name == "raw-token":
             TOKEN = cookie.value
             break
