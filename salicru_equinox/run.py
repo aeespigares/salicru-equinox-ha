@@ -340,6 +340,23 @@ def request_realtime():
 
     return read_json_response(response)
 
+def request_plant():
+    """Request current plant information using the current token."""
+
+    if not TOKEN:
+        login()
+
+    url = f"{EQUINOX_API}/plants/{PLANT_ID}"
+
+    response = http_request(
+        url,
+        headers={
+            "Authorization": f"Bearer {TOKEN}",
+            "Platform-Referer": "EquinoxWeb",
+        },
+    )
+
+    return read_json_response(response)
 
 def get_realtime():
     """
@@ -366,6 +383,30 @@ def get_realtime():
 
         return request_realtime()
 
+def get_plant():
+    """
+    Get current plant information.
+
+    If EQUINOX returns HTTP 401, authenticate again and retry once.
+    """
+
+    global TOKEN
+
+    try:
+        return request_plant()
+
+    except HTTPError as error:
+        if error.code != 401:
+            raise
+
+        LOGGER.warning(
+            "El token EQUINOX ha expirado. Renovando sesión..."
+        )
+
+        TOKEN = None
+        login()
+
+        return request_plant()
 
 # ---------------------------------------------------------------------------
 # MQTT
