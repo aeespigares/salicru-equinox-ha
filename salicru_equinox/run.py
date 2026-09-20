@@ -221,10 +221,24 @@ def inverter_state_topic(plant_id, inverter_key):
     )
 
 
-def plant_entity_id(plant_id, domain, suffix):
+def plant_entity_id(
+    plant_id,
+    domain,
+    suffix,
+):
+    safe_plant_id = slugify(
+        plant_id,
+        "plant",
+    )
+
+    safe_suffix = slugify(
+        suffix,
+        "entity",
+    )
+
     return (
         f"{domain}.salicru_equinox_"
-        f"{plant_id}_{suffix}"
+        f"{safe_plant_id}_{safe_suffix}"
     )
 
 
@@ -1190,15 +1204,15 @@ def publish_discovery(
 
     discovery_topic = (
         f"{MQTT_DISCOVERY_PREFIX}/sensor/"
-        f"{DEVICE_ID}/alarms/config"
+        f"{device_id}/alarms/config"
     )
 
     payload = {
         "name": "Alarmas inversor",
-        "unique_id": f"{DEVICE_ID}_alarms",
-        "state_topic": STATE_TOPIC,
+        "unique_id": f"{device_id}_alarms",
+        "state_topic": state_topic,
         "value_template": "{{ value_json.alarms }}",
-        "availability_topic": AVAILABILITY_TOPIC,
+        "availability_topic": availability_topic,
         "payload_available": "online",
         "payload_not_available": "offline",
         "device": device,
@@ -1223,18 +1237,18 @@ def publish_discovery(
 
     discovery_topic = (
         f"{MQTT_DISCOVERY_PREFIX}/binary_sensor/"
-        f"{DEVICE_ID}/api_ok/config"
+        f"{device_id}/api_ok/config"
     )
 
     payload = {
         "name": "Comunicación EQUINOX",
-        "unique_id": f"{DEVICE_ID}_api_ok",
-        "state_topic": STATE_TOPIC,
+        "unique_id": f"{device_id}_api_ok",
+        "state_topic": state_topic,
         "value_template": "{{ value_json.api_ok }}",
         "payload_on": "ON",
         "payload_off": "OFF",
         "device_class": "connectivity",
-        "availability_topic": AVAILABILITY_TOPIC,
+        "availability_topic": availability_topic,
         "payload_available": "online",
         "payload_not_available": "offline",
         "device": device,
@@ -1258,24 +1272,24 @@ def publish_discovery(
 
     discovery_topic = (
         f"{MQTT_DISCOVERY_PREFIX}/binary_sensor/"
-        f"{DEVICE_ID}/inverter_connection/config"
+        f"{device_id}/inverter_connection/config"
     )
 
     payload = {
         "name": "Inversor conectado",
-        "unique_id": f"{DEVICE_ID}_inverter_connection",
+        "unique_id": f"{device_id}_inverter_connection",
         "default_entity_id": plant_entity_id(
             plant_id,
             "binary_sensor",
             "inversor_conectado",
         ),
-        "state_topic": STATE_TOPIC,
+        "state_topic": state_topic,
         "value_template": "{{ value_json.inverter_connected }}",
         "payload_on": "ON",
         "payload_off": "OFF",
         "device_class": "connectivity",
         "entity_category": "diagnostic",
-        "availability_topic": AVAILABILITY_TOPIC,
+        "availability_topic": availability_topic,
         "payload_available": "online",
         "payload_not_available": "offline",
         "device": device,
@@ -1310,44 +1324,6 @@ def format_alarms(alarms):
 
     return str(alarms)
 
-
-def extract_inverter_power(data):
-    """Get inverter output power from the first inverter."""
-
-    inverters = data.get("invertersProps")
-
-    if not isinstance(inverters, list) or not inverters:
-        return None
-
-    first_inverter = inverters[0]
-
-    if not isinstance(first_inverter, dict):
-        return None
-
-    return first_inverter.get("outputPower")
-
-def extract_inverter_connection(data):
-    """Get inverter device connectivity status."""
-
-    devices = data.get("devices")
-
-    if not isinstance(devices, list) or not devices:
-        return None
-
-    first_device = devices[0]
-
-    if not isinstance(first_device, dict):
-        return None
-
-    status = first_device.get("status")
-
-    if status == "CONNECTED":
-        return "ON"
-
-    if status == "DISCONNECTED":
-        return "OFF"
-
-    return None
 
 def extract_data(
     data,
@@ -1528,6 +1504,11 @@ def cleanup_removed_inverters(
             f"inverter_{key}_connection/config"
         )
 
+        state_topic = inverter_state_topic(
+            plant_id,
+            key,
+        )
+
         mqtt_publish(
             client,
             sensor_topic,
@@ -1538,6 +1519,13 @@ def cleanup_removed_inverters(
         mqtt_publish(
             client,
             binary_topic,
+            "",
+            retain=True,
+        )
+
+        mqtt_publish(
+            client,
+            state_topic,
             "",
             retain=True,
         )
