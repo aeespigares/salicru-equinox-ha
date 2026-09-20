@@ -376,13 +376,13 @@ PLANT_SENSOR_CONFIG = {
         "entity_id": "numero_inversores",
         "entity_category": "diagnostic",
     },
-    "connected_inverters": {
-        "name": "Inversores conectados",
-        "unit": None,
-        "suggested_display_precision": 0,
-        "entity_id": "inversores_conectados",
-        "entity_category": "diagnostic",
-    },
+#    "connected_inverters": {
+#        "name": "Inversores conectados",
+#        "unit": None,
+#        "suggested_display_precision": 0,
+#        "entity_id": "inversores_conectados",
+#        "entity_category": "diagnostic",
+#    },
     "last_update": {
         "name": "Última actualización",
         "unit": None,
@@ -809,14 +809,14 @@ def find_catalog_item(
 
     return {}
 
-def inverter_connection_from_device_status(status):
-    if status == "CONNECTED":
-        return "ON"
-
-    if status == "DISCONNECTED":
-        return "OFF"
-
-    return None
+#def inverter_connection_from_device_status(status):
+#    if status == "CONNECTED":
+#        return "ON"
+#
+#    if status == "DISCONNECTED":
+#        return "OFF"
+#
+#    return None
 
 def extract_inverters(
     realtime_data,
@@ -909,13 +909,13 @@ def extract_inverters(
         ):
             power = None
 
-        connected = (
-            inverter_connection_from_device_status(
-                catalog_item.get(
-                    "device_status"
-                )
-            )
-        )
+#        connected = (
+#            inverter_connection_from_device_status(
+#                catalog_item.get(
+#                    "device_status"
+#                )
+#            )
+#        )
 
         label = (
             f"Inversor {index + 1}"
@@ -937,12 +937,12 @@ def extract_inverters(
                     ) or None
                 ),
                 "power": power,
-                "connected": connected,
-                "device_status": (
-                    catalog_item.get(
-                        "device_status"
-                    )
-                ),
+#                "connected": connected,
+#                "device_status": (
+#                    catalog_item.get(
+#                        "device_status"
+#                    )
+#                ),
             }
         )
 
@@ -1148,55 +1148,55 @@ def publish_discovery(
             retain=True,
         )
 
-        # -------------------------------------------------------------------
-        # Estado de conexión del inversor
-        # -------------------------------------------------------------------
-
-        discovery_topic = (
-            f"{MQTT_DISCOVERY_PREFIX}/binary_sensor/"
-            f"{device_id}/"
-            f"inverter_{key}_connection/config"
-        )
-        
-        payload = {
-            "name": f"{label} conectado",
-            "unique_id": (
-                f"{device_id}_"
-                f"inverter_{key}_connection"
-            ),
-            "default_entity_id": plant_entity_id(
-                plant_id,
-                "binary_sensor",
-                f"inversor_{key}_conectado",
-            ),
-            "state_topic": inverter_state_topic(
-                plant_id,
-                key,
-            ),
-            "value_template": (
-                "{{ value_json.connected }}"
-            ),
-            "payload_on": "ON",
-            "payload_off": "OFF",
-            "device_class": "connectivity",
-            "entity_category": "diagnostic",
-            "availability_topic": (
-                plant_availability_topic(plant_id)
-            ),
-            "payload_available": "online",
-            "payload_not_available": "offline",
-            "device": device,
-        }
-
-        mqtt_publish(
-            client,
-            discovery_topic,
-            json.dumps(
-                payload,
-                ensure_ascii=False,
-            ),
-            retain=True,
-        )
+#        # -------------------------------------------------------------------
+#        # Estado de conexión del inversor
+#        # -------------------------------------------------------------------
+#
+#        discovery_topic = (
+#            f"{MQTT_DISCOVERY_PREFIX}/binary_sensor/"
+#            f"{device_id}/"
+#            f"inverter_{key}_connection/config"
+#        )
+#        
+#        payload = {
+#            "name": f"{label} conectado",
+#            "unique_id": (
+#                f"{device_id}_"
+#                f"inverter_{key}_connection"
+#            ),
+#            "default_entity_id": plant_entity_id(
+#                plant_id,
+#                "binary_sensor",
+#                f"inversor_{key}_conectado",
+#            ),
+#            "state_topic": inverter_state_topic(
+#                plant_id,
+#                key,
+#            ),
+#            "value_template": (
+#                "{{ value_json.connected }}"
+#            ),
+#            "payload_on": "ON",
+#            "payload_off": "OFF",
+#            "device_class": "connectivity",
+#            "entity_category": "diagnostic",
+#            "availability_topic": (
+#                plant_availability_topic(plant_id)
+#            ),
+#            "payload_available": "online",
+#            "payload_not_available": "offline",
+#            "device": device,
+#        }
+#
+#        mqtt_publish(
+#            client,
+#            discovery_topic,
+#            json.dumps(
+#                payload,
+#                ensure_ascii=False,
+#            ),
+#            retain=True,
+#        )
     
     # -----------------------------------------------------------------------
     # Alarmas inversor
@@ -1267,7 +1267,7 @@ def publish_discovery(
     )
 
     # -----------------------------------------------------------------------
-    # Conectividad del inversor
+    # Conectividad de la planta
     # -----------------------------------------------------------------------
 
     discovery_topic = (
@@ -1276,15 +1276,15 @@ def publish_discovery(
     )
 
     payload = {
-        "name": "Inversor conectado",
-        "unique_id": f"{device_id}_inverter_connection",
+        "name": "Planta conectada",
+        "unique_id": f"{device_id}_plant_connection",
         "default_entity_id": plant_entity_id(
             plant_id,
             "binary_sensor",
-            "inversor_conectado",
+            "planta_conectada",
         ),
         "state_topic": state_topic,
-        "value_template": "{{ value_json.inverter_connected }}",
+        "value_template": "{{ value_json.plant_connected }}",
         "payload_on": "ON",
         "payload_off": "OFF",
         "device_class": "connectivity",
@@ -1352,11 +1352,11 @@ def extract_data(
         else None
     )
 
-    connected_inverters = sum(
-        1
-        for inverter in inverter_records
-        if inverter["connected"] == "ON"
-    )
+#    connected_inverters = sum(
+#        1
+#        for inverter in inverter_records
+#        if inverter["connected"] == "ON"
+#    )
 
     if isinstance(
         alarms,
@@ -1395,14 +1395,14 @@ def extract_data(
         "inverter_count": len(
             inverter_records
         ),
-        "connected_inverters": (
-            connected_inverters
-        ),
+#        "connected_inverters": (
+#            connected_inverters
+#        ),
         "last_update": datetime.now(
             timezone.utc
         ).isoformat(),
         "api_ok": "ON",
-        "inverter_connected": (
+        "plant_connected": (
             extract_plant_connection(
                 plant_data
             )
@@ -1459,12 +1459,12 @@ def publish_inverter_states(
     ):
         payload = {
             "power": inverter["power"],
-            "connected": inverter["connected"],
+#            "connected": inverter["connected"],
             "serial_number": inverter["serial"],
             "model": inverter["model"],
-            "device_status": inverter[
-                "device_status"
-            ],
+#            "device_status": inverter[
+#                "device_status"
+#            ],
         }
 
         mqtt_publish(
@@ -1498,17 +1498,6 @@ def cleanup_removed_inverters(
             f"inverter_{key}_power/config"
         )
 
-        binary_topic = (
-            f"{MQTT_DISCOVERY_PREFIX}/binary_sensor/"
-            f"{device_id}/"
-            f"inverter_{key}_connection/config"
-        )
-
-        state_topic = inverter_state_topic(
-            plant_id,
-            key,
-        )
-
         mqtt_publish(
             client,
             sensor_topic,
@@ -1516,11 +1505,21 @@ def cleanup_removed_inverters(
             retain=True,
         )
 
-        mqtt_publish(
-            client,
-            binary_topic,
-            "",
-            retain=True,
+#        binary_topic = (
+#            f"{MQTT_DISCOVERY_PREFIX}/binary_sensor/"
+#            f"{device_id}/"
+#            f"inverter_{key}_connection/config"
+#        )
+#        mqtt_publish(
+#            client,
+#            binary_topic,
+#            "",
+#            retain=True,
+#        )
+
+        state_topic = inverter_state_topic(
+            plant_id,
+            key,
         )
 
         mqtt_publish(
@@ -1571,8 +1570,11 @@ def main():
 
     try:
         while True:
-
             for plant_id in PLANT_IDS:
+
+                # ----------------------------------------------------------------
+                # Consulta de información de la planta
+                # ----------------------------------------------------------------
 
                 try:
                     plant_data = get_plant(
@@ -1615,6 +1617,7 @@ def main():
                         "información: %s",
                         plant_id,
                         error,
+                        exc_info=True,
                     )
 
                     publish_offline(
@@ -1623,6 +1626,10 @@ def main():
                     )
 
                     continue
+
+                # ----------------------------------------------------------------
+                # Consulta de datos de tiempo real
+                # ----------------------------------------------------------------
 
                 try:
                     realtime_data = get_realtime(
@@ -1664,6 +1671,7 @@ def main():
                         "Planta %s - error consultando datos: %s",
                         plant_id,
                         error,
+                        exc_info=True,
                     )
 
                     publish_offline(
@@ -1673,101 +1681,114 @@ def main():
 
                     continue
 
-                state = extract_data(
-                    realtime_data,
-                    plant_data,
-                )
+                # ----------------------------------------------------------------
+                # Procesamiento y publicación de la planta
+                # ----------------------------------------------------------------
 
-                inverter_keys = {
-                    inverter["key"]
-                    for inverter in state[
-                        "inverters"
-                    ]
-                }
-
-                previous_keys = discovery_state.get(
-                    plant_id,
-                    set(),
-                )
-
-                signature = (
-                    extract_plant_name(
+                try:
+                    state = extract_data(
+                        realtime_data,
                         plant_data,
+                    )
+
+                    inverter_keys = {
+                        inverter["key"]
+                        for inverter in state["inverters"]
+                    }
+
+                    previous_keys = discovery_state.get(
                         plant_id,
-                    ),
-                    tuple(
-                        sorted(inverter_keys)
-                    ),
-                )
-
-                if (
-                    discovery_signatures.get(
-                        plant_id
-                    )
-                    != signature
-                ):
-
-                    stale_keys = (
-                        previous_keys
-                        - inverter_keys
+                        set(),
                     )
 
-                    if stale_keys:
-                        cleanup_removed_inverters(
-                            mqtt_client,
+                    signature = (
+                        extract_plant_name(
+                            plant_data,
                             plant_id,
-                            stale_keys,
+                        ),
+                        tuple(
+                            sorted(inverter_keys)
+                        ),
+                    )
+
+                    if (
+                        discovery_signatures.get(
+                            plant_id
+                        )
+                        != signature
+                    ):
+                        stale_keys = (
+                            previous_keys
+                            - inverter_keys
                         )
 
-                    current_keys = publish_discovery(
+                        if stale_keys:
+                            cleanup_removed_inverters(
+                                mqtt_client,
+                                plant_id,
+                                stale_keys,
+                            )
+
+                        current_keys = publish_discovery(
+                            mqtt_client,
+                            plant_id,
+                            plant_data,
+                            state["inverters"],
+                        )
+
+                        discovery_state[
+                            plant_id
+                        ] = current_keys
+
+                        discovery_signatures[
+                            plant_id
+                        ] = signature
+
+                        save_discovery_state(
+                            discovery_state
+                        )
+
+                    publish_state(
                         mqtt_client,
                         plant_id,
-                        plant_data,
-                        state["inverters"],
+                        state,
                     )
 
-                    discovery_state[
-                        plant_id
-                    ] = current_keys
-
-                    discovery_signatures[
-                        plant_id
-                    ] = signature
-
-                    save_discovery_state(
-                        discovery_state
+                    publish_inverter_states(
+                        mqtt_client,
+                        plant_id,
+                        state,
                     )
 
-                publish_state(
-                    mqtt_client,
-                    plant_id,
-                    state,
-                )
+                    LOGGER.info(
+                        "EQUINOX OK - planta %s - "
+                        "inversores: %s - potencia total: %s kW",
+                        plant_id,
+                        state["inverter_count"],
+                        state["inverter_power"],
+                    )
 
-                publish_inverter_states(
-                    mqtt_client,
-                    plant_id,
-                    state,
-                )
+                except Exception as error:
+                    LOGGER.error(
+                        "Planta %s - error procesando o "
+                        "publicando datos: %s",
+                        plant_id,
+                        error,
+                        exc_info=True,
+                    )
 
-                LOGGER.info(
-                    "EQUINOX OK - planta %s - "
-                    "inversores: %s - potencia total: %s kW",
-                    plant_id,
-                    state[
-                        "inverter_count"
-                    ],
-                    state[
-                        "inverter_power"
-                    ],
-                )
+                    publish_offline(
+                        mqtt_client,
+                        plant_id,
+                    )
+
+                    continue
 
             time.sleep(
                 POLL_INTERVAL
             )
 
     finally:
-
         for plant_id in PLANT_IDS:
             publish_offline(
                 mqtt_client,
