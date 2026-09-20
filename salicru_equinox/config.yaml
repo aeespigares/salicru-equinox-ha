@@ -19,11 +19,13 @@ services:
 options:
   email: null
   password: null
-  plant_id: null
+  plant_ids: []
   poll_interval: 900
 
 schema:
   email: str
   password: password
-  plant_id: str
+  plant_ids:
+    - str
+  plant_id: str?
   poll_interval: int
