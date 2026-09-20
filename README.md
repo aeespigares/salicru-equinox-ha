@@ -1,11 +1,12 @@
 # Salicru EQUINOX para Home Assistant
+
 <p align="left">
   <img src="logo.png" alt="Salicru EQUINOX" width="600">
 </p>
 
 App para [Home Assistant](https://www.home-assistant.io/) que permite integrar inversores Salicru conectados a la plataforma [EQUINOX](https://equinox.salicru.com/).
 
-La aplicación consulta periódicamente los datos de la instalación a través de la plataforma EQUINOX y los publica mediante MQTT Discovery, de forma que Home Assistant crea automáticamente el dispositivo y sus sensores.
+La aplicación consulta periódicamente los datos de la instalación y el estado de conectividad del dispositivo a través de la plataforma EQUINOX y los publica mediante MQTT Discovery, de forma que Home Assistant crea automáticamente el dispositivo y sus sensores.
 
 > **Estado del proyecto:** funcional y en desarrollo.
 
@@ -13,16 +14,17 @@ La aplicación consulta periódicamente los datos de la instalación a través d
 
 ## ✨ Características
 
-- Integración con la plataforma web Salicru EQUINOX.
-- Autenticación automática con la cuenta de EQUINOX.
-- Renovación automática de la sesión cuando expira el token de acceso.
-- Consulta periódica de los datos de la planta.
-- Publicación mediante MQTT.
-- MQTT Discovery para crear automáticamente el dispositivo en Home Assistant.
-- No requiere configurar manualmente los sensores MQTT.
-- Configuración desde la interfaz de Home Assistant.
-- Intervalo de consulta configurable.
-- Compatible con Home Assistant OS y su sistema de Apps.
+* Integración con la plataforma web Salicru EQUINOX.
+* Autenticación automática con la cuenta de EQUINOX.
+* Renovación automática de la sesión cuando expira el token de acceso.
+* Consulta periódica de los datos de la planta.
+* Consulta del estado de conectividad del dispositivo de la planta.
+* Publicación mediante MQTT.
+* MQTT Discovery para crear automáticamente el dispositivo en Home Assistant.
+* No requiere configurar manualmente los sensores MQTT.
+* Configuración desde la interfaz de Home Assistant.
+* Intervalo de consulta configurable.
+* Compatible con Home Assistant OS y su sistema de Apps.
 
 ---
 
@@ -34,27 +36,33 @@ La aplicación crea automáticamente un dispositivo llamado:
 
 Actualmente se crean los siguientes sensores:
 
-| Sensor | Unidad | Descripción |
-|---|---|---|
-| Potencia inversor | kW | Potencia instantánea producida por el inversor |
-| Generación diaria | kWh | Energía generada durante el día actual |
-| Consumo diario | kWh | Energía consumida por la instalación durante el día actual |
-| Energía importada | kWh | Energía tomada de la red durante el día actual |
-| Energía exportada | kWh | Energía vertida a la red durante el día actual |
-| Autoconsumo | kWh | Energía solar producida y consumida directamente por la instalación, sin vertido a red |
-| Potencia red | kW | Potencia instantánea intercambiada con la red |
-| Número de alarmas | — | Número de alarmas comunicadas por el inversor |
-| Alarmas inversor | — | Información de las alarmas comunicadas por EQUINOX |
-| Comunicación EQUINOX | — | Estado de comunicación con la plataforma EQUINOX |
-| Última actualización | — | Fecha y hora de la última consulta |
+| Sensor               | Unidad | Descripción                                                                            |
+| -------------------- | ------ | -------------------------------------------------------------------------------------- |
+| Potencia inversor    | kW     | Potencia instantánea producida por el inversor                                         |
+| Generación diaria    | kWh    | Energía generada durante el día actual                                                 |
+| Consumo diario       | kWh    | Energía consumida por la instalación durante el día actual                             |
+| Energía importada    | kWh    | Energía tomada de la red durante el día actual                                         |
+| Energía exportada    | kWh    | Energía vertida a la red durante el día actual                                         |
+| Autoconsumo          | kWh    | Energía solar producida y consumida directamente por la instalación, sin vertido a red |
+| Potencia red         | kW     | Potencia instantánea intercambiada con la red                                          |
+| Número de alarmas    | —      | Número de alarmas comunicadas por el inversor                                          |
+| Alarmas inversor     | —      | Información de las alarmas comunicadas por EQUINOX                                     |
+| Comunicación EQUINOX | —      | Estado de comunicación entre la App y la plataforma EQUINOX                            |
+| Inversor conectado   | —      | Estado de conectividad del dispositivo según EQUINOX                                   |
+| Última actualización | —      | Fecha y hora de la última consulta                                                     |
+
+El sensor **Inversor conectado** es un `binary_sensor` de diagnóstico. Sus estados representan:
+
+* **ON:** EQUINOX informa que el dispositivo está conectado (`CONNECTED`).
+* **OFF:** EQUINOX informa que el dispositivo está desconectado (`DISCONNECTED`).
 
 ### Potencia de red
 
 El signo de **Potencia red** se interpreta de la siguiente manera:
 
-- **Valor positivo:** la instalación está tomando energía de la red.
-- **Valor negativo:** la instalación está vertiendo energía a la red.
-- **0 kW:** no existe intercambio significativo con la red.
+* **Valor positivo:** la instalación está tomando energía de la red.
+* **Valor negativo:** la instalación está vertiendo energía a la red.
+* **0 kW:** no existe intercambio significativo con la red.
 
 ### Autoconsumo
 
@@ -78,17 +86,19 @@ poll_interval: 900
 
 El valor está expresado en segundos.
 
+En cada ciclo, la aplicación consulta tanto los datos de tiempo real de la planta como la información de estado del dispositivo.
+
 ---
 
 ## 🏠 Requisitos
 
 Se necesita:
 
-- Home Assistant OS con soporte para Apps.
-- MQTT configurado en Home Assistant.
-- Una cuenta de usuario en EQUINOX.
-- Una instalación Salicru visible desde la plataforma EQUINOX.
-- El identificador (`Plant ID`) de la instalación.
+* Home Assistant OS con soporte para Apps.
+* MQTT configurado en Home Assistant.
+* Una cuenta de usuario en EQUINOX.
+* Una instalación Salicru visible desde la plataforma EQUINOX.
+* El identificador (`Plant ID`) de la instalación.
 
 La aplicación utiliza el servicio MQTT proporcionado por Home Assistant y no necesita configurar manualmente la dirección del broker, puerto ni credenciales MQTT.
 
@@ -124,12 +134,12 @@ e instálala.
 
 Antes de iniciar la aplicación, configura:
 
-| Opción | Descripción |
-|---|---|
-| Email | Dirección de correo de la cuenta EQUINOX |
-| Password | Contraseña de la cuenta EQUINOX |
-| Plant ID | Identificador de la instalación en EQUINOX |
-| Poll interval | Intervalo de consulta en segundos |
+| Opción        | Descripción                                |
+| ------------- | ------------------------------------------ |
+| Email         | Dirección de correo de la cuenta EQUINOX   |
+| Password      | Contraseña de la cuenta EQUINOX            |
+| Plant ID      | Identificador de la instalación en EQUINOX |
+| Poll interval | Intervalo de consulta en segundos          |
 
 Ejemplo:
 
@@ -153,7 +163,7 @@ El proceso es:
 1. Solicita un token CSRF.
 2. Inicia sesión con el usuario y contraseña configurados.
 3. Obtiene el token de sesión proporcionado por EQUINOX.
-4. Utiliza ese token para consultar los datos de la planta.
+4. Utiliza ese token para consultar los datos de la planta y su estado.
 5. Si el token expira, vuelve a iniciar sesión automáticamente.
 
 Las credenciales se configuran directamente en Home Assistant y no forman parte del código fuente del repositorio.
@@ -166,9 +176,47 @@ La aplicación utiliza la plataforma web de Salicru EQUINOX para obtener los dat
 
 Las consultas se realizan contra la API utilizada por la propia plataforma EQUINOX.
 
-Actualmente se utiliza principalmente la información de tiempo real de la planta para obtener los valores publicados en Home Assistant.
+Actualmente se consultan principalmente dos recursos:
+
+* `/plants/{Plant ID}/realTime` para obtener los datos de producción, consumo, energía y potencia.
+* `/plants/{Plant ID}` para obtener información de la planta y el estado de conectividad de sus dispositivos.
+
+La información de conectividad se obtiene del campo `status` del dispositivo comunicado por EQUINOX. Los estados utilizados actualmente son:
+
+```text
+CONNECTED
+DISCONNECTED
+```
+
+La aplicación convierte estos estados en el sensor de Home Assistant **Inversor conectado**:
+
+```text
+CONNECTED     → ON
+DISCONNECTED  → OFF
+```
 
 La aplicación no se comunica directamente con el inversor mediante una conexión local. Los datos se obtienen a través de la plataforma EQUINOX.
+
+### Comunicación EQUINOX frente a Inversor conectado
+
+Son dos conceptos diferentes y ambos se mantienen en la integración:
+
+**Comunicación EQUINOX**
+
+Indica si la aplicación puede comunicarse correctamente con la API de EQUINOX.
+
+**Inversor conectado**
+
+Indica el estado de conectividad que EQUINOX informa para el dispositivo de la instalación.
+
+Por ejemplo, es posible que:
+
+```text
+Comunicación EQUINOX: ON
+Inversor conectado: OFF
+```
+
+En ese caso, la App puede comunicarse correctamente con SALICRU, pero EQUINOX informa de que el dispositivo de la instalación está desconectado.
 
 ---
 
@@ -178,12 +226,12 @@ La aplicación utiliza el servicio MQTT proporcionado por Home Assistant.
 
 No es necesario indicar manualmente:
 
-- dirección del broker;
-- puerto;
-- usuario MQTT;
-- contraseña MQTT.
+* dirección del broker;
+* puerto;
+* usuario MQTT;
+* contraseña MQTT.
 
-La aplicación solicita el servicio MQTT al Supervisor de Home Assistant y obtiene automáticamente los parámetros necesarios para conectarse.
+La aplicación solicita el servicio MQTT de Home Assistant y obtiene automáticamente los parámetros necesarios para conectarse.
 
 Los datos se publican mediante **MQTT Discovery**, por lo que Home Assistant crea automáticamente el dispositivo y sus entidades.
 
@@ -227,11 +275,13 @@ El funcionamiento general es:
 └──────────────────────┘
 ```
 
+La App obtiene de EQUINOX tanto los datos de funcionamiento de la instalación como la información necesaria para determinar el estado de conectividad del dispositivo.
+
 ---
 
 ## ⏱️ Funcionamiento periódico
 
-La aplicación permanece ejecutándose en Home Assistant y realiza una consulta a EQUINOX según el intervalo configurado.
+La aplicación permanece ejecutándose en Home Assistant y realiza consultas a EQUINOX según el intervalo configurado.
 
 Con la configuración predeterminada:
 
@@ -243,10 +293,11 @@ En cada ciclo:
 
 1. Comprueba la sesión de EQUINOX.
 2. Si es necesario, vuelve a autenticarse.
-3. Consulta los datos de la planta.
-4. Procesa los valores recibidos.
-5. Publica los estados mediante MQTT.
-6. Espera hasta el siguiente ciclo.
+3. Consulta los datos de tiempo real de la planta.
+4. Consulta la información y estado del dispositivo de la planta.
+5. Procesa los valores recibidos.
+6. Publica los estados mediante MQTT.
+7. Espera hasta el siguiente ciclo.
 
 La aplicación no realiza consultas continuas al inversor ni mantiene una conexión permanente con EQUINOX.
 
@@ -274,11 +325,11 @@ De esta forma, la aplicación puede permanecer ejecutándose durante largos peri
 
 Los siguientes sensores representan valores correspondientes al día actual proporcionados por EQUINOX:
 
-- Generación diaria
-- Consumo diario
-- Energía importada
-- Energía exportada
-- Autoconsumo
+* Generación diaria
+* Consumo diario
+* Energía importada
+* Energía exportada
+* Autoconsumo
 
 Estos valores son datos diarios y pueden reiniciarse al comenzar un nuevo día.
 
@@ -310,9 +361,26 @@ Cuando no existen alarmas, el sensor puede aparecer sin valor.
 
 ## 📡 Estado de comunicación
 
-El sensor **Comunicación EQUINOX** permite comprobar si la aplicación está pudiendo comunicarse correctamente con la plataforma EQUINOX.
+Existen dos sensores relacionados con la comunicación:
 
-El objetivo es proporcionar una indicación sencilla del estado de la comunicación sin necesidad de consultar los registros de la aplicación.
+### Comunicación EQUINOX
+
+Permite comprobar si la aplicación está pudiendo comunicarse correctamente con la plataforma EQUINOX.
+
+El objetivo es proporcionar una indicación sencilla del estado de comunicación sin necesidad de consultar los registros de la aplicación.
+
+### Inversor conectado
+
+Indica el estado de conectividad del dispositivo según la información proporcionada por EQUINOX.
+
+Sus estados son:
+
+```text
+ON  → EQUINOX informa CONNECTED
+OFF → EQUINOX informa DISCONNECTED
+```
+
+Este sensor permite distinguir entre un problema de comunicación de Home Assistant con EQUINOX y un problema de conectividad del propio dispositivo de la instalación.
 
 ---
 
@@ -332,11 +400,11 @@ Esta integración depende de la plataforma EQUINOX de Salicru.
 
 Si Salicru modifica:
 
-- el sistema de autenticación;
-- los endpoints de la API;
-- el formato de las respuestas;
-- los nombres de los campos;
-- los mecanismos de sesión;
+* el sistema de autenticación;
+* los endpoints de la API;
+* el formato de las respuestas;
+* los nombres de los campos;
+* los mecanismos de sesión;
 
 la aplicación puede dejar de funcionar hasta que sea adaptada.
 
@@ -345,6 +413,12 @@ la aplicación puede dejar de funcionar hasta que sea adaptada.
 La aplicación necesita acceso a Internet para comunicarse con la plataforma EQUINOX.
 
 Si Home Assistant pierde el acceso a Internet, no será posible obtener nuevos datos desde EQUINOX.
+
+### Estado del dispositivo
+
+El sensor **Inversor conectado** depende de la información de estado proporcionada por EQUINOX.
+
+Que la aplicación pueda consultar correctamente la API no significa necesariamente que el dispositivo de la instalación esté conectado.
 
 ### Datos proporcionados por EQUINOX
 
@@ -364,9 +438,9 @@ Comprueba los registros de la aplicación:
 
 Comprueba especialmente:
 
-- que el usuario y contraseña de EQUINOX sean correctos;
-- que el `Plant ID` sea correcto;
-- que MQTT esté funcionando.
+* que el usuario y contraseña de EQUINOX sean correctos;
+* que el `Plant ID` sea correcto;
+* que MQTT esté funcionando.
 
 ### Error de autenticación EQUINOX
 
@@ -396,6 +470,12 @@ Comprueba que:
 3. MQTT está funcionando.
 4. El dispositivo **Salicru EQUINOX** aparece en la integración MQTT.
 
+### El sensor "Inversor conectado" está en OFF
+
+Comprueba el estado que informa EQUINOX para el dispositivo de la instalación.
+
+Si **Comunicación EQUINOX** está en `ON` y **Inversor conectado** está en `OFF`, la aplicación está pudiendo comunicarse correctamente con SALICRU, pero EQUINOX informa de que el dispositivo está desconectado.
+
 ### Los datos no se actualizan
 
 Comprueba:
@@ -405,6 +485,8 @@ Comprueba:
 3. Que la aplicación siga ejecutándose.
 4. Que Home Assistant tenga conexión a Internet.
 5. Que EQUINOX esté disponible.
+6. El estado de **Comunicación EQUINOX**.
+7. El estado de **Inversor conectado**.
 
 ---
 
@@ -432,13 +514,15 @@ Define la configuración de la App, sus opciones y la dependencia del servicio M
 
 Implementa:
 
-- autenticación con EQUINOX;
-- gestión del token;
-- consulta de datos;
-- extracción de los valores;
-- conexión MQTT;
-- MQTT Discovery;
-- publicación de estados.
+* autenticación con EQUINOX;
+* gestión del token;
+* consulta de datos de tiempo real;
+* consulta del estado de la planta;
+* extracción de los valores;
+* extracción del estado de conectividad del dispositivo;
+* conexión MQTT;
+* MQTT Discovery;
+* publicación de estados.
 
 ### `run.sh`
 
@@ -470,6 +554,15 @@ Si propones cambios, intenta mantener la compatibilidad con las versiones actual
 ---
 
 ## 📝 Historial de versiones
+
+### 1.0.4
+
+- Añadido el sensor de diagnóstico **Inversor conectado**.
+- Consulta del estado de conectividad del dispositivo mediante la API de EQUINOX.
+- Diferenciación entre la comunicación de la App con EQUINOX y el estado de conexión del dispositivo.
+- El sensor **Inversor conectado** muestra:
+  - `ON` cuando EQUINOX informa `CONNECTED`.
+  - `OFF` cuando EQUINOX informa `DISCONNECTED`.
 
 ### 1.0.3
 
