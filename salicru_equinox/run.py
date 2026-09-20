@@ -654,6 +654,41 @@ def publish_discovery(client):
         retain=True,
     )
 
+    # -----------------------------------------------------------------------
+    # Conectividad del inversor
+    # -----------------------------------------------------------------------
+
+    discovery_topic = (
+        f"{MQTT_DISCOVERY_PREFIX}/binary_sensor/"
+        f"{DEVICE_ID}/inverter_connection/config"
+    )
+
+    payload = {
+        "name": "Inversor conectado",
+        "unique_id": f"{DEVICE_ID}_inverter_connection",
+        "default_entity_id": (
+            f"binary_sensor.salicru_equinox_"
+            f"{PLANT_ID}_inversor_conectado"
+        ),
+        "state_topic": STATE_TOPIC,
+        "value_template": "{{ value_json.inverter_connected }}",
+        "payload_on": "ON",
+        "payload_off": "OFF",
+        "device_class": "connectivity",
+        "entity_category": "diagnostic",
+        "availability_topic": AVAILABILITY_TOPIC,
+        "payload_available": "online",
+        "payload_not_available": "offline",
+        "device": device,
+    }
+
+    mqtt_publish(
+        client,
+        discovery_topic,
+        json.dumps(payload, ensure_ascii=False),
+        retain=True,
+    )
+
 
 # ---------------------------------------------------------------------------
 # Data processing
@@ -690,8 +725,30 @@ def extract_inverter_power(data):
 
     return first_inverter.get("outputPower")
 
+def extract_inverter_connection(data):
+    """Get inverter device connectivity status."""
 
-def extract_data(data):
+    devices = data.get("devices")
+
+    if not isinstance(devices, list) or not devices:
+        return None
+
+    first_device = devices[0]
+
+    if not isinstance(first_device, dict):
+        return None
+
+    status = first_device.get("status")
+
+    if status == "CONNECTED":
+        return "ON"
+
+    if status == "DISCONNECTED":
+        return "OFF"
+
+    return None
+
+def extract_data(data, plant_data):
     """Convert the EQUINOX response into the MQTT state payload."""
 
     alarms = data.get("inverterAlarms") or []
@@ -715,6 +772,7 @@ def extract_data(data):
         "alarms": format_alarms(alarms),
         "last_update": datetime.now(timezone.utc).isoformat(),
         "api_ok": "ON",
+        "inverter_connected": extract_inverter_connection(plant_data),
     }
 
 
@@ -781,9 +839,14 @@ def main():
 
         while True:
             try:
-                data = get_realtime()
-                state = extract_data(data)
-
+                realtime_data = get_realtime()
+                plant_data = get_plant()
+        
+                state = extract_data(
+                    realtime_data,
+                    plant_data,
+                )
+        
                 publish_state(
                     mqtt_client,
                     state,
