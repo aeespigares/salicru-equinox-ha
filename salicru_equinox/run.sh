@@ -59,7 +59,7 @@ bashio::log.info "Salicru EQUINOX: run.py tiene ${RUNPY_LINES} líneas"
 bashio::log.info "Salicru EQUINOX: probando importación de paho-mqtt..."
 
 if ! /opt/venv/bin/python -c \
-    'import paho.mqtt.client as mqtt; print("paho-mqtt OK:", mqtt.__version__)'
+    'import paho.mqtt; print("paho-mqtt OK:", paho.mqtt.__version__)'
 then
     bashio::log.error "Falló la importación de paho-mqtt."
     exit 1
