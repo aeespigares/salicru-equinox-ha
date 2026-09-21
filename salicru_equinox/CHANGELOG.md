@@ -2,7 +2,7 @@
 
 Todos los cambios relevantes de este proyecto se documentan en este archivo.
 
-## [1.1.1]
+## [1.1.2]
 
 ### Añadido
 
@@ -17,6 +17,7 @@ Todos los cambios relevantes de este proyecto se documentan en este archivo.
 * Actualizada la presentación de la App para enlazar con el repositorio de GitHub.
 * Añadido enlace de apoyo al proyecto mediante Buy Me a Coffee.
 * El intervalo mínimo de consulta a EQUINOX queda establecido en **60 segundos**.
+* Corregir /usr/bin/with-contenv → /command/with-contenv
 
 ## [1.1.0]
 
