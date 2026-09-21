@@ -97,7 +97,7 @@ Por ejemplo:
 poll_interval: 900
 ```
 
-El valor está expresado en segundos.
+El valor está expresado en segundos y no puede ser inferior a **60 segundos (1 minuto)..**
 
 En cada ciclo, la aplicación consulta tanto los datos de tiempo real de la planta como la información de estado del dispositivo.
 
@@ -349,6 +349,8 @@ Con la configuración predeterminada:
 ```text
 900 segundos = 15 minutos
 ```
+
+El intervalo mínimo permitido es de **60 segundos** para evitar consultas excesivamente frecuentes a la plataforma EQUINOX.
 
 En cada ciclo:
 
