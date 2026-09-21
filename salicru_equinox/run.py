@@ -1419,6 +1419,278 @@ def cleanup_removed_inverters(
             retain=True,
         )
 
+def cleanup_removed_plants(
+    client,
+    configured_plant_ids,
+    discovery_state,
+):
+    """
+    Remove MQTT Discovery entities and retained state
+    for plants that are no longer configured.
+    """
+
+    configured_plant_ids = set(
+        configured_plant_ids
+    )
+
+    removed_plant_ids = (
+        set(discovery_state.keys())
+        - configured_plant_ids
+    )
+
+    if not removed_plant_ids:
+        return set()
+
+    cleaned_plant_ids = set()
+
+    for plant_id in removed_plant_ids:
+        device_id = plant_device_id(
+            plant_id
+        )
+
+        cleanup_success = True
+
+        LOGGER.info(
+            "La planta %s ya no está configurada. "
+            "Eliminando sus entidades y estados MQTT...",
+            plant_id,
+        )
+
+        # -------------------------------------------------------------------
+        # Sensores numéricos de la planta
+        # -------------------------------------------------------------------
+
+        for key in PLANT_SENSOR_CONFIG:
+            discovery_topic = (
+                f"{MQTT_DISCOVERY_PREFIX}/sensor/"
+                f"{device_id}/{key}/config"
+            )
+
+            try:
+                mqtt_publish(
+                    client,
+                    discovery_topic,
+                    "",
+                    retain=True,
+                )
+            except Exception as error:
+                cleanup_success = False
+
+                LOGGER.warning(
+                    "No se pudo eliminar Discovery "
+                    "de %s: %s",
+                    discovery_topic,
+                    error,
+                )
+
+        # -------------------------------------------------------------------
+        # Alarmas inversor
+        # -------------------------------------------------------------------
+
+        alarms_topic = (
+            f"{MQTT_DISCOVERY_PREFIX}/sensor/"
+            f"{device_id}/alarms/config"
+        )
+
+        try:
+            mqtt_publish(
+                client,
+                alarms_topic,
+                "",
+                retain=True,
+            )
+        except Exception as error:
+            cleanup_success = False
+
+            LOGGER.warning(
+                "No se pudo eliminar Discovery "
+                "de %s: %s",
+                alarms_topic,
+                error,
+            )
+
+        # -------------------------------------------------------------------
+        # Comunicación EQUINOX
+        # -------------------------------------------------------------------
+
+        api_ok_topic = (
+            f"{MQTT_DISCOVERY_PREFIX}/binary_sensor/"
+            f"{device_id}/api_ok/config"
+        )
+
+        try:
+            mqtt_publish(
+                client,
+                api_ok_topic,
+                "",
+                retain=True,
+            )
+        except Exception as error:
+            cleanup_success = False
+
+            LOGGER.warning(
+                "No se pudo eliminar Discovery "
+                "de %s: %s",
+                api_ok_topic,
+                error,
+            )
+
+        # -------------------------------------------------------------------
+        # Conectividad de la planta
+        # -------------------------------------------------------------------
+
+        plant_connection_topic = (
+            f"{MQTT_DISCOVERY_PREFIX}/binary_sensor/"
+            f"{device_id}/plant_connection/config"
+        )
+
+        try:
+            mqtt_publish(
+                client,
+                plant_connection_topic,
+                "",
+                retain=True,
+            )
+        except Exception as error:
+            cleanup_success = False
+
+            LOGGER.warning(
+                "No se pudo eliminar Discovery "
+                "de %s: %s",
+                plant_connection_topic,
+                error,
+            )
+
+        # -------------------------------------------------------------------
+        # Sensores de potencia de los inversores
+        # -------------------------------------------------------------------
+
+        inverter_keys = discovery_state.get(
+            plant_id,
+            set(),
+        )
+
+        for key in inverter_keys:
+            inverter_discovery_topic = (
+                f"{MQTT_DISCOVERY_PREFIX}/sensor/"
+                f"{device_id}/"
+                f"inverter_{key}_power/config"
+            )
+
+            try:
+                mqtt_publish(
+                    client,
+                    inverter_discovery_topic,
+                    "",
+                    retain=True,
+                )
+            except Exception as error:
+                cleanup_success = False
+
+                LOGGER.warning(
+                    "No se pudo eliminar Discovery "
+                    "del inversor %s de la planta %s: %s",
+                    key,
+                    plant_id,
+                    error,
+                )
+
+            # Estado MQTT retenido del inversor
+            inverter_state = inverter_state_topic(
+                plant_id,
+                key,
+            )
+
+            try:
+                mqtt_publish(
+                    client,
+                    inverter_state,
+                    "",
+                    retain=True,
+                )
+            except Exception as error:
+                cleanup_success = False
+
+                LOGGER.warning(
+                    "No se pudo eliminar el estado MQTT "
+                    "del inversor %s de la planta %s: %s",
+                    key,
+                    plant_id,
+                    error,
+                )
+
+        # -------------------------------------------------------------------
+        # Estado general de la planta
+        # -------------------------------------------------------------------
+
+        state_topic = plant_state_topic(
+            plant_id
+        )
+
+        try:
+            mqtt_publish(
+                client,
+                state_topic,
+                "",
+                retain=True,
+            )
+        except Exception as error:
+            cleanup_success = False
+
+            LOGGER.warning(
+                "No se pudo eliminar el estado MQTT "
+                "de la planta %s: %s",
+                plant_id,
+                error,
+            )
+
+        # -------------------------------------------------------------------
+        # Disponibilidad de la planta
+        # -------------------------------------------------------------------
+
+        availability_topic = (
+            plant_availability_topic(
+                plant_id
+            )
+        )
+
+        try:
+            mqtt_publish(
+                client,
+                availability_topic,
+                "",
+                retain=True,
+            )
+        except Exception as error:
+            cleanup_success = False
+
+            LOGGER.warning(
+                "No se pudo eliminar la disponibilidad MQTT "
+                "de la planta %s: %s",
+                plant_id,
+                error,
+            )
+
+        if cleanup_success:
+            cleaned_plant_ids.add(
+                plant_id
+            )
+
+            LOGGER.info(
+                "Limpieza MQTT completada para la planta %s.",
+                plant_id,
+            )
+
+        else:
+            LOGGER.warning(
+                "La limpieza de la planta %s no se completó "
+                "correctamente. Se volverá a intentar en el "
+                "siguiente arranque.",
+                plant_id,
+            )
+
+    return cleaned_plant_ids
+
 def publish_offline(
     client,
     plant_id,
@@ -1456,6 +1728,24 @@ def main():
     mqtt_client = mqtt_connect()
 
     discovery_state = load_discovery_state()
+    
+    cleaned_plant_ids = cleanup_removed_plants(
+        mqtt_client,
+        PLANT_IDS,
+        discovery_state,
+    )
+    
+    for plant_id in cleaned_plant_ids:
+        discovery_state.pop(
+            plant_id,
+            None,
+        )
+    
+    if cleaned_plant_ids:
+        save_discovery_state(
+            discovery_state
+        )
+    
     discovery_signatures = {}
 
     try:
