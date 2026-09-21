@@ -376,13 +376,6 @@ PLANT_SENSOR_CONFIG = {
         "entity_id": "numero_inversores",
         "entity_category": "diagnostic",
     },
-#    "connected_inverters": {
-#        "name": "Inversores conectados",
-#        "unit": None,
-#        "suggested_display_precision": 0,
-#        "entity_id": "inversores_conectados",
-#        "entity_category": "diagnostic",
-#    },
     "last_update": {
         "name": "Última actualización",
         "unit": None,
@@ -407,7 +400,6 @@ TOKEN = None
 # ---------------------------------------------------------------------------
 # HTTP helpers
 # ---------------------------------------------------------------------------
-
 
 def http_request(url, method="GET", data=None, headers=None):
     """Perform an HTTP request using the shared cookie jar."""
@@ -450,11 +442,9 @@ def read_json_response(response):
     finally:
         response.close()
 
-
 # ---------------------------------------------------------------------------
 # EQUINOX authentication
 # ---------------------------------------------------------------------------
-
 
 def reset_session():
     """Clear the current EQUINOX session."""
@@ -809,15 +799,6 @@ def find_catalog_item(
 
     return {}
 
-#def inverter_connection_from_device_status(status):
-#    if status == "CONNECTED":
-#        return "ON"
-#
-#    if status == "DISCONNECTED":
-#        return "OFF"
-#
-#    return None
-
 def extract_inverters(
     realtime_data,
     plant_data,
@@ -909,14 +890,6 @@ def extract_inverters(
         ):
             power = None
 
-#        connected = (
-#            inverter_connection_from_device_status(
-#                catalog_item.get(
-#                    "device_status"
-#                )
-#            )
-#        )
-
         label = (
             f"Inversor {index + 1}"
             if not serial
@@ -937,12 +910,6 @@ def extract_inverters(
                     ) or None
                 ),
                 "power": power,
-#                "connected": connected,
-#                "device_status": (
-#                    catalog_item.get(
-#                        "device_status"
-#                    )
-#                ),
             }
         )
 
@@ -1148,56 +1115,6 @@ def publish_discovery(
             retain=True,
         )
 
-#        # -------------------------------------------------------------------
-#        # Estado de conexión del inversor
-#        # -------------------------------------------------------------------
-#
-#        discovery_topic = (
-#            f"{MQTT_DISCOVERY_PREFIX}/binary_sensor/"
-#            f"{device_id}/"
-#            f"inverter_{key}_connection/config"
-#        )
-#        
-#        payload = {
-#            "name": f"{label} conectado",
-#            "unique_id": (
-#                f"{device_id}_"
-#                f"inverter_{key}_connection"
-#            ),
-#            "default_entity_id": plant_entity_id(
-#                plant_id,
-#                "binary_sensor",
-#                f"inversor_{key}_conectado",
-#            ),
-#            "state_topic": inverter_state_topic(
-#                plant_id,
-#                key,
-#            ),
-#            "value_template": (
-#                "{{ value_json.connected }}"
-#            ),
-#            "payload_on": "ON",
-#            "payload_off": "OFF",
-#            "device_class": "connectivity",
-#            "entity_category": "diagnostic",
-#            "availability_topic": (
-#                plant_availability_topic(plant_id)
-#            ),
-#            "payload_available": "online",
-#            "payload_not_available": "offline",
-#            "device": device,
-#        }
-#
-#        mqtt_publish(
-#            client,
-#            discovery_topic,
-#            json.dumps(
-#                payload,
-#                ensure_ascii=False,
-#            ),
-#            retain=True,
-#        )
-    
     # -----------------------------------------------------------------------
     # Alarmas inversor
     # -----------------------------------------------------------------------
@@ -1352,12 +1269,6 @@ def extract_data(
         else None
     )
 
-#    connected_inverters = sum(
-#        1
-#        for inverter in inverter_records
-#        if inverter["connected"] == "ON"
-#    )
-
     if isinstance(
         alarms,
         list,
@@ -1395,9 +1306,6 @@ def extract_data(
         "inverter_count": len(
             inverter_records
         ),
-#        "connected_inverters": (
-#            connected_inverters
-#        ),
         "last_update": datetime.now(
             timezone.utc
         ).isoformat(),
@@ -1459,12 +1367,8 @@ def publish_inverter_states(
     ):
         payload = {
             "power": inverter["power"],
-#            "connected": inverter["connected"],
             "serial_number": inverter["serial"],
             "model": inverter["model"],
-#            "device_status": inverter[
-#                "device_status"
-#            ],
         }
 
         mqtt_publish(
@@ -1504,18 +1408,6 @@ def cleanup_removed_inverters(
             "",
             retain=True,
         )
-
-#        binary_topic = (
-#            f"{MQTT_DISCOVERY_PREFIX}/binary_sensor/"
-#            f"{device_id}/"
-#            f"inverter_{key}_connection/config"
-#        )
-#        mqtt_publish(
-#            client,
-#            binary_topic,
-#            "",
-#            retain=True,
-#        )
 
         state_topic = inverter_state_topic(
             plant_id,
@@ -1760,6 +1652,7 @@ def main():
                         state,
                     )
 
+                    # Commentar cuando todo Ok
                     LOGGER.info(
                         "EQUINOX OK - planta %s - "
                         "inversores: %s - potencia total: %s kW",
