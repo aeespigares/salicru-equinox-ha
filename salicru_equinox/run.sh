@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv bashio
+#!/command/with-contenv bashio
 
 export MQTT_HOST="$(bashio::services mqtt 'host')"
 export MQTT_PORT="$(bashio::services mqtt 'port')"
