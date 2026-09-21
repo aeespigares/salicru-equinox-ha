@@ -377,6 +377,12 @@ PLANT_SENSOR_CONFIG = {
         "entity_id": "numero_inversores",
         "entity_category": "diagnostic",
     },
+    "plant_status": {
+        "name": "Estado de planta",
+        "unit": None,
+        "entity_id": "estado_planta",
+        "entity_category": "diagnostic",
+    },
     "last_update": {
         "name": "Última actualización",
         "unit": None,
@@ -914,6 +920,21 @@ def extract_inverters(
 
     return records
 
+def extract_plant_status(
+    plant_data
+):
+    """Get the raw plant status returned by EQUINOX."""
+
+    status = plant_data.get("status")
+
+    if status is None:
+        return None
+
+    status = str(status).strip()
+
+    return status or None
+
+
 def extract_plant_connection(
     plant_data
 ):
@@ -1304,6 +1325,9 @@ def extract_data(
         ),
         "inverter_count": len(
             inverter_records
+        ),
+        "plant_status": extract_plant_status(
+            plant_data
         ),
         "last_update": datetime.now(
             timezone.utc
@@ -1997,4 +2021,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main
