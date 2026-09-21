@@ -1,4 +1,4 @@
-FROM ghcr.io/home-assistant/base:3.24
+FROM ghcr.io/home-assistant/base:3.24-2026.08.0
 
 RUN \
     apk add --no-cache \
