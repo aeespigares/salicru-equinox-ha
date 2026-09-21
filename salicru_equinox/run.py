@@ -1272,7 +1272,7 @@ def publish_discovery(
 
     discovery_topic = (
         f"{MQTT_DISCOVERY_PREFIX}/binary_sensor/"
-        f"{device_id}/inverter_connection/config"
+        f"{device_id}/plant_connection/config"
     )
 
     payload = {
