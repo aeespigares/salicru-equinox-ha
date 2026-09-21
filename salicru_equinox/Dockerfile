@@ -13,6 +13,8 @@ RUN \
 COPY run.py /app/run.py
 COPY run.sh /run.sh
 
-RUN chmod a+x /run.sh
+RUN \
+    sed -i 's/\r$//' /run.sh && \
+    chmod a+x /run.sh
 
 CMD ["/run.sh"]
