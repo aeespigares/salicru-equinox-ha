@@ -1,27 +1,24 @@
 name: Salicru EQUINOX
-version: "1.1.0"
+version: "1.1.1"
 slug: salicru_equinox
-description: Monitorización de inversores Salicru EQUINOX mediante la plataforma EQUINOX
+description: >-
+  Monitorización de una o varias instalaciones Salicru EQUINOX
+  mediante la plataforma EQUINOX y MQTT Discovery en Home Assistant.
 url: https://github.com/aeespigares/salicru-equinox-ha
-
 startup: application
 boot: auto
 init: false
-
 arch:
   - amd64
   - aarch64
   - armv7
-
 services:
   - mqtt:need
-
 options:
   email: null
   password: null
   plant_ids: []
   poll_interval: 900
-
 schema:
   email: str
   password: password
