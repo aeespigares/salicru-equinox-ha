@@ -2,7 +2,7 @@
 
 Todos los cambios relevantes de este proyecto se documentan en este archivo.
 
-## [1.1.2]
+## [1.1.7]
 
 ### Añadido
 
