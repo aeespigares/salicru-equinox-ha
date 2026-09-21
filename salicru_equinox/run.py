@@ -45,6 +45,7 @@ MQTT_DISCOVERY_PREFIX = "homeassistant"
 HTTP_TIMEOUT = 30
 MQTT_KEEPALIVE = 60
 MQTT_CLIENT_ID = "salicru_equinox_app"
+MIN_POLL_INTERVAL = 60
 
 
 # ---------------------------------------------------------------------------
@@ -138,9 +139,9 @@ def load_options():
             "No se ha configurado la contraseña de EQUINOX."
         )
 
-    if poll_interval <= 0:
+    if poll_interval < MIN_POLL_INTERVAL:
         raise RuntimeError(
-            "poll_interval debe ser mayor que 0."
+            f"poll_interval debe ser como mínimo {MIN_POLL_INTERVAL} segundos."
         )
 
     return {
