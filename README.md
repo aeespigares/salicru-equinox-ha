@@ -9,6 +9,7 @@ App para [Home Assistant](https://www.home-assistant.io/) que permite integrar i
 La aplicación consulta periódicamente los datos de la instalación y el estado de conectividad del dispositivo a través de la plataforma EQUINOX y los publica mediante MQTT Discovery, de forma que Home Assistant crea automáticamente el dispositivo y sus sensores.
 
 > **Estado del proyecto:** funcional y en desarrollo.
+☕ Si esta App te resulta útil y quieres apoyar su desarrollo y mantenimiento, puedes invitarme a un café en [Buy Me a Coffee](https://buymeacoffee.com/aeespigaresdesarrollo). ¡Gracias por apoyar el proyecto!
 
 ---
 
@@ -17,10 +18,16 @@ La aplicación consulta periódicamente los datos de la instalación y el estado
 * Integración con la plataforma web Salicru EQUINOX.
 * Autenticación automática con la cuenta de EQUINOX.
 * Renovación automática de la sesión cuando expira el token de acceso.
-* Consulta periódica de los datos de la planta.
-* Consulta del estado de conectividad del dispositivo de la planta.
+* Consulta periódica de los datos de las plantas.
+* Consulta del estado de conectividad de los dispositivos de las plantas.
+* Soporte para varias plantas EQUINOX en una misma App.
+* Un dispositivo independiente de Home Assistant por cada planta.
+* Soporte para varios inversores por planta.
+* Potencia total de la planta calculada como la suma de los inversores.
+* Sensores individuales de potencia para cada inversor.
+* Identificación independiente de plantas mediante su Plant ID en MQTT Discovery.
 * Publicación mediante MQTT.
-* MQTT Discovery para crear automáticamente el dispositivo en Home Assistant.
+* MQTT Discovery para crear automáticamente los dispositivos y sensores en Home Assistant.
 * No requiere configurar manualmente los sensores MQTT.
 * Configuración desde la interfaz de Home Assistant.
 * Intervalo de consulta configurable.
@@ -30,28 +37,34 @@ La aplicación consulta periódicamente los datos de la instalación y el estado
 
 ## 📊 Sensores disponibles
 
-La aplicación crea automáticamente un dispositivo llamado:
+La aplicación crea automáticamente un dispositivo de Home Assistant por cada planta configurada.
 
-**Salicru EQUINOX**
+Por ejemplo:
+
+* **Salicru EQUINOX - Planta 365**
+* **Salicru EQUINOX - Planta 841**
+* **Salicru EQUINOX - Planta 1234**
 
 Actualmente se crean los siguientes sensores:
 
-| Sensor               | Unidad | Descripción                                                                            |
-| -------------------- | ------ | -------------------------------------------------------------------------------------- |
-| Potencia inversor    | kW     | Potencia instantánea producida por el inversor                                         |
-| Generación diaria    | kWh    | Energía generada durante el día actual                                                 |
-| Consumo diario       | kWh    | Energía consumida por la instalación durante el día actual                             |
-| Energía importada    | kWh    | Energía tomada de la red durante el día actual                                         |
-| Energía exportada    | kWh    | Energía vertida a la red durante el día actual                                         |
+| Sensor               | Unidad | Descripción |
+| -------------------- | ------ | ----------- |
+| Potencia planta      | kW     | Potencia instantánea total producida por todos los inversores de la planta |
+| Generación diaria    | kWh    | Energía generada durante el día actual |
+| Consumo diario       | kWh    | Energía consumida por la instalación durante el día actual |
+| Energía importada    | kWh    | Energía tomada de la red durante el día actual |
+| Energía exportada    | kWh    | Energía vertida a la red durante el día actual |
 | Autoconsumo          | kWh    | Energía solar producida y consumida directamente por la instalación, sin vertido a red |
-| Potencia red         | kW     | Potencia instantánea intercambiada con la red                                          |
-| Número de alarmas    | —      | Número de alarmas comunicadas por el inversor                                          |
-| Alarmas inversor     | —      | Información de las alarmas comunicadas por EQUINOX                                     |
-| Comunicación EQUINOX | —      | Estado de comunicación entre la App y la plataforma EQUINOX                            |
-| Inversor conectado   | —      | Estado de conectividad del dispositivo según EQUINOX                                   |
-| Última actualización | —      | Fecha y hora de la última consulta                                                     |
+| Potencia red         | kW     | Potencia instantánea intercambiada con la red |
+| Número de alarmas    | —      | Número de alarmas comunicadas por EQUINOX |
+| Alarmas inversor     | —      | Información de las alarmas comunicadas por EQUINOX |
+| Comunicación EQUINOX | —      | Estado de comunicación entre la App y la plataforma EQUINOX |
+| Planta conectada     | —      | Estado de conectividad del dispositivo/gateway de la planta según EQUINOX |
+| Número de inversores | —      | Número de inversores detectados en la planta |
+| Potencia Inversor X  | kW     | Potencia individual de cada inversor |
+| Última actualización | —      | Fecha y hora de la última consulta |
 
-El sensor **Inversor conectado** es un `binary_sensor` de diagnóstico. Sus estados representan:
+El sensor **Planta conectada** es un `binary_sensor` de diagnóstico. Sus estados representan:
 
 * **ON:** EQUINOX informa que el dispositivo está conectado (`CONNECTED`).
 * **OFF:** EQUINOX informa que el dispositivo está desconectado (`DISCONNECTED`).
@@ -84,11 +97,43 @@ Por ejemplo:
 poll_interval: 900
 ```
 
-El valor está expresado en segundos.
+El valor está expresado en segundos y no puede ser inferior a **60 segundos (1 minuto)..**
 
 En cada ciclo, la aplicación consulta tanto los datos de tiempo real de la planta como la información de estado del dispositivo.
 
 ---
+
+## 🔀 Varias plantas e inversores
+
+La versión 1.1.0 permite configurar varias plantas EQUINOX en una misma App.
+
+Cada planta se publica de forma independiente mediante sus propios topics MQTT y genera su propio dispositivo en Home Assistant.
+
+Por ejemplo:
+
+```text
+Planta 365
+  → salicru/365/state
+
+Planta 841
+  → salicru/841/state
+
+Planta 1234
+  → salicru/1234/state
+```
+
+Cada planta puede tener uno o varios inversores.
+
+Cuando una planta tiene varios inversores, la aplicación crea:
+
+* un sensor de **Potencia planta**, que representa la suma de la potencia de los inversores;
+* un sensor de **Número de inversores**;
+* un sensor independiente de **Potencia Inversor X** para cada inversor detectado.
+
+Los inversores se identifican preferentemente mediante su número de serie proporcionado por EQUINOX. Cuando este no está disponible, la aplicación utiliza la posición del inversor como identificación alternativa.
+
+El sensor **Planta conectada** representa el estado del dispositivo o gateway que comunica la planta con la plataforma EQUINOX. No representa un estado de conexión individual de cada inversor.
+
 
 ## 🏠 Requisitos
 
@@ -134,21 +179,28 @@ e instálala.
 
 Antes de iniciar la aplicación, configura:
 
-| Opción        | Descripción                                |
-| ------------- | ------------------------------------------ |
-| Email         | Dirección de correo de la cuenta EQUINOX   |
-| Password      | Contraseña de la cuenta EQUINOX            |
-| Plant ID      | Identificador de la instalación en EQUINOX |
-| Poll interval | Intervalo de consulta en segundos          |
+| Opción        | Descripción                                              |
+| ------------- | -------------------------------------------------------- |
+| Email         | Dirección de correo de la cuenta EQUINOX                 |
+| Password      | Contraseña de la cuenta EQUINOX                          |
+| Plant IDs     | Lista de identificadores de las instalaciones en EQUINOX |
+| Poll interval | Intervalo de consulta en segundos                        |
 
 Ejemplo:
 
 ```text
 Email: usuario@example.com
 Password: ********
-Plant ID: 365
+plant_ids:
+  - "365"
+  - "841"
+  - "1234"
 Poll interval: 900
 ```
+
+La aplicación permite configurar varias plantas pertenecientes a la misma cuenta de EQUINOX.
+Cada Plant ID genera un dispositivo independiente en Home Assistant.
+En instalaciones actualizadas desde versiones anteriores, también se admite temporalmente la opción `plant_id` de una sola planta como configuración heredada.
 
 > **Importante:** no publiques nunca tu contraseña, tokens de acceso, cookies de sesión ni otros datos de autenticación en GitHub.
 
@@ -188,7 +240,7 @@ CONNECTED
 DISCONNECTED
 ```
 
-La aplicación convierte estos estados en el sensor de Home Assistant **Inversor conectado**:
+La aplicación convierte estos estados en el sensor de Home Assistant **Planta conectada**:
 
 ```text
 CONNECTED     → ON
@@ -197,28 +249,23 @@ DISCONNECTED  → OFF
 
 La aplicación no se comunica directamente con el inversor mediante una conexión local. Los datos se obtienen a través de la plataforma EQUINOX.
 
-### Comunicación EQUINOX frente a Inversor conectado
+### Comunicación EQUINOX frente a Planta conectada
 
-Son dos conceptos diferentes y ambos se mantienen en la integración:
+Son dos conceptos diferentes:
 
 **Comunicación EQUINOX**
 
 Indica si la aplicación puede comunicarse correctamente con la API de EQUINOX.
 
-**Inversor conectado**
+**Planta conectada**
 
-Indica el estado de conectividad que EQUINOX informa para el dispositivo de la instalación.
+Indica el estado de conectividad que EQUINOX informa para el dispositivo o gateway de comunicación de la planta.
 
 Por ejemplo, es posible que:
 
 ```text
 Comunicación EQUINOX: ON
-Inversor conectado: OFF
-```
-
-En ese caso, la App puede comunicarse correctamente con SALICRU, pero EQUINOX informa de que el dispositivo de la instalación está desconectado.
-
----
+Planta conectada: OFF
 
 ## 📡 Comunicación MQTT
 
@@ -273,6 +320,20 @@ El funcionamiento general es:
 │ Dispositivo Salicru  │
 │     + sensores       │
 └──────────────────────┘
+
+Cuenta EQUINOX
+      │
+      ├── Planta 365
+      │     ├── Inversor 1
+      │     ├── Inversor 2
+      │     └── ...
+      │
+      ├── Planta 841
+      │     ├── Inversor 1
+      │     └── ...
+      │
+      └── Planta 1234
+            └── ...
 ```
 
 La App obtiene de EQUINOX tanto los datos de funcionamiento de la instalación como la información necesaria para determinar el estado de conectividad del dispositivo.
@@ -288,6 +349,8 @@ Con la configuración predeterminada:
 ```text
 900 segundos = 15 minutos
 ```
+
+El intervalo mínimo permitido es de **60 segundos** para evitar consultas excesivamente frecuentes a la plataforma EQUINOX.
 
 En cada ciclo:
 
@@ -369,9 +432,9 @@ Permite comprobar si la aplicación está pudiendo comunicarse correctamente con
 
 El objetivo es proporcionar una indicación sencilla del estado de comunicación sin necesidad de consultar los registros de la aplicación.
 
-### Inversor conectado
+### Planta conectada
 
-Indica el estado de conectividad del dispositivo según la información proporcionada por EQUINOX.
+Indica el estado de conectividad de la planta según la información proporcionada por EQUINOX.
 
 Sus estados son:
 
@@ -380,7 +443,7 @@ ON  → EQUINOX informa CONNECTED
 OFF → EQUINOX informa DISCONNECTED
 ```
 
-Este sensor permite distinguir entre un problema de comunicación de Home Assistant con EQUINOX y un problema de conectividad del propio dispositivo de la instalación.
+Este sensor permite distinguir entre un problema de comunicación de Home Assistant con EQUINOX y un problema de conectividad de la propia planta de la instalación.
 
 ---
 
@@ -416,15 +479,23 @@ Si Home Assistant pierde el acceso a Internet, no será posible obtener nuevos d
 
 ### Estado del dispositivo
 
-El sensor **Inversor conectado** depende de la información de estado proporcionada por EQUINOX.
+El sensor **Planta conectada** depende de la información de estado proporcionada por EQUINOX.
 
-Que la aplicación pueda consultar correctamente la API no significa necesariamente que el dispositivo de la instalación esté conectado.
+Que la aplicación pueda consultar correctamente la API no significa necesariamente que la planta de la instalación esté conectada.
 
 ### Datos proporcionados por EQUINOX
 
 Los valores mostrados en Home Assistant proceden de los datos proporcionados por la plataforma EQUINOX.
 
 La aplicación no calcula los valores principales de producción, consumo o intercambio con la red a partir de datos eléctricos locales.
+
+### Identificación de inversores
+
+La aplicación intenta identificar cada inversor mediante su número de serie.
+
+Si EQUINOX no proporciona el número de serie en la respuesta de tiempo real, se utiliza como respaldo la posición del inversor dentro de la respuesta.
+
+La aplicación registra una advertencia si el número de inversores proporcionado por los diferentes endpoints de EQUINOX no coincide.
 
 ---
 
@@ -474,7 +545,7 @@ Comprueba que:
 
 Comprueba el estado que informa EQUINOX para el dispositivo de la instalación.
 
-Si **Comunicación EQUINOX** está en `ON` y **Inversor conectado** está en `OFF`, la aplicación está pudiendo comunicarse correctamente con SALICRU, pero EQUINOX informa de que el dispositivo está desconectado.
+Si **Comunicación EQUINOX** está en `ON` y **Planta conectada** está en `OFF`, la aplicación está pudiendo comunicarse correctamente con SALICRU, pero EQUINOX informa de que la planta está desconectada.
 
 ### Los datos no se actualizan
 
@@ -486,7 +557,7 @@ Comprueba:
 4. Que Home Assistant tenga conexión a Internet.
 5. Que EQUINOX esté disponible.
 6. El estado de **Comunicación EQUINOX**.
-7. El estado de **Inversor conectado**.
+7. El estado de **Planta conectada**.
 
 ---
 
@@ -554,6 +625,17 @@ Si propones cambios, intenta mantener la compatibilidad con las versiones actual
 ---
 
 ## 📝 Historial de versiones
+
+### 1.1.0
+
+- Soporte para varias plantas EQUINOX en una misma App.
+- Dispositivo independiente de Home Assistant para cada planta.
+- Topics MQTT independientes por Plant ID.
+- Soporte para varios inversores por planta.
+- Potencia total de la planta calculada a partir de todos sus inversores.
+- Sensores individuales de potencia por inversor.
+- Sensor del número de inversores.
+- Nuevo sensor **Planta conectada** para indicar el estado del dispositivo/gateway de comunicación de la planta.
 
 ### 1.0.4
 

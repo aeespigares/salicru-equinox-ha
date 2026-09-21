@@ -1,8 +1,8 @@
 name: Salicru EQUINOX
-version: "1.0.4"
+version: "1.1.0"
 slug: salicru_equinox
 description: Monitorización de inversores Salicru EQUINOX mediante la plataforma EQUINOX
-url: https://equinox.salicru.com
+url: https://github.com/aeespigares/salicru-equinox-ha
 
 startup: application
 boot: auto
@@ -19,11 +19,13 @@ services:
 options:
   email: null
   password: null
-  plant_id: null
+  plant_ids: []
   poll_interval: 900
 
 schema:
   email: str
   password: password
-  plant_id: str
+  plant_ids:
+    - str
+  plant_id: str?
   poll_interval: int
