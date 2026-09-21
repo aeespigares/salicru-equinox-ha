@@ -730,7 +730,7 @@ def device_info(plant_id, plant_data):
     }
 
 def extract_inverter_catalog(plant_data):
-    """Extract inverter metadata and parent device status."""
+    """Extract inverter metadata from the plant devices."""
 
     catalog = []
 
@@ -746,7 +746,6 @@ def extract_inverter_catalog(plant_data):
         if not isinstance(device, dict):
             continue
 
-        device_status = device.get("status")
         inverters = device.get("inverters")
 
         if not isinstance(inverters, list):
@@ -769,7 +768,6 @@ def extract_inverter_catalog(plant_data):
                     "model": str(
                         inverter.get("model") or ""
                     ).strip(),
-                    "device_status": device_status,
                     "device_index": device_index,
                     "inverter_index": inverter_index,
                 }
