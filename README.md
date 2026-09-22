@@ -472,21 +472,40 @@ salicru-equinox-ha/
 ├── repository.yaml
 ├── README.md
 └── salicru_equinox/
-    ├── config.yaml
+    ├── CHANGELOG.md
     ├── DOCS.md
     ├── Dockerfile
+    ├── config.yaml
+    ├── icon.png
+    ├── logo.png
     ├── requirements.txt
-    ├── run.sh
-    └── run.py
+    ├── run.py
+    └── run.sh
 ```
+
+### `CHANGELOG.md`
+
+Contiene un registro cronológico estructurado de todos los cambios notables, mejoras, correcciones y eliminaciones realizadas en un proyecto de software ordenados por versión.
+
+### `DOCS.md`
+
+Contiene la documentación de la App que Home Assistant muestra en la pestaña **Documentación**. Su contenido se mantiene alineado con este README.
+
+### `Dockerfile`
+
+Define la imagen utilizada por la App.
 
 ### `config.yaml`
 
 Define la configuración de la App, sus opciones y la dependencia del servicio MQTT de Home Assistant.
 
-### `DOCS.md`
+### `icon.png` y `logo.png`
 
-Contiene la documentación de la App que Home Assistant muestra en la pestaña **Documentación**. Su contenido se mantiene alineado con este README.
+Icono y logo que utiliza la documentación y Home Assistant para presentar la aplicación.
+
+### `requirements.txt`
+
+Contiene las dependencias Python utilizadas por el proyecto.
 
 ### `run.py`
 
@@ -503,14 +522,6 @@ Implementa:
 ### `run.sh`
 
 Inicializa la aplicación y obtiene la configuración del servicio MQTT proporcionado por Home Assistant.
-
-### `Dockerfile`
-
-Define la imagen utilizada por la App.
-
-### `requirements.txt`
-
-Contiene las dependencias Python utilizadas por el proyecto.
 
 ---
 
