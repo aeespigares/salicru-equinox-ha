@@ -554,7 +554,6 @@ Si propones cambios, intenta mantener la compatibilidad con las versiones actual
 - Los valores del estado no se interpretan ni se limitan a una lista cerrada.
 - Añadida la documentación de la App mediante `DOCS.md`.
 - La URL oficial de la App apunta al repositorio de GitHub del proyecto.
-- corregir /usr/bin/with-contenv → /command/with-contenv
 
 ### 1.1.0
 
