@@ -1966,13 +1966,13 @@ def main():
                     )
 
                     # Commentar cuando todo Ok
-                    LOGGER.info(
-                        "EQUINOX OK - planta %s - "
-                        "inversores: %s - potencia total: %s kW",
-                        plant_id,
-                        state["inverter_count"],
-                        state["inverter_power"],
-                    )
+                    #LOGGER.info(
+                    #    "EQUINOX OK - planta %s - "
+                    #    "inversores: %s - potencia total: %s kW",
+                    #    plant_id,
+                    #    state["inverter_count"],
+                    #    state["inverter_power"],
+                    #)
 
                 except Exception as error:
                     LOGGER.error(
