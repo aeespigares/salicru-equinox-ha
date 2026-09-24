@@ -1,7 +1,7 @@
 # Salicru EQUINOX para Home Assistant
 
+<a href="https://www.buymeacoffee.com/aeespigaresdesarrollo" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" style="height: 40px !important;width: 138px !important; max-width: 30%;"></a>
 [Home Assistant](https://www.home-assistant.io/) · [Repositorio GitHub](https://github.com/aeespigares/salicru-equinox-ha) 
-<a href="https://www.buymeacoffee.com/aeespigaresdesarrollo" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" style="height: 40px !important;width: 138px !important; max-width: 30%;"></a> 
 
 <p align="left">
   <img
