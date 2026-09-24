@@ -11,7 +11,7 @@ App para [Home Assistant](https://www.home-assistant.io/) que permite integrar i
 La aplicación consulta periódicamente los datos de una o varias instalaciones a través de la plataforma EQUINOX y los publica mediante MQTT Discovery, de forma que Home Assistant crea automáticamente un dispositivo por planta y sus sensores.
 
 > **Estado del proyecto:** funcional y en desarrollo.
-> **Versión actual:** 1.1.7
+> **Versión actual:** 1.1.8
 >
 > ☕ Si esta App te resulta útil y quieres apoyar su desarrollo y mantenimiento, puedes invitarme a un café en [Buy Me a Coffee](https://buymeacoffee.com/aeespigaresdesarrollo). ¡Gracias por apoyar el proyecto!
 
@@ -542,7 +542,7 @@ Si propones cambios, intenta mantener la compatibilidad con las versiones actual
 
 ## 📝 Historial de versiones
 
-### 1.1.7
+### 1.1.8
 
 - Añadido el sensor **Estado de planta**.
 - El sensor expone directamente la propiedad `status` del JSON de `/plants/{Plant ID}`.
