@@ -1,9 +1,14 @@
-# Salicru EQUINOX para Home Assistant <a href="https://www.buymeacoffee.com/aeespigaresdesarrollo" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" style="height: 60px !important;width: 217px !important;"></a>
+# Salicru EQUINOX para Home Assistant <a href="https://www.buymeacoffee.com/aeespigaresdesarrollo" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" style="height: 40px !important;width: 138px !important;"></a>
 
 **Salicru EQUINOX** · [Home Assistant](https://www.home-assistant.io/) · [Repositorio GitHub](https://github.com/aeespigares/salicru-equinox-ha)
 
 <p align="left">
-  <img src="./salicru_equinox/logo.png" alt="Salicru EQUINOX" width="600">
+  <img
+    src="https://raw.githubusercontent.com/aeespigares/salicru-equinox-ha/main/salicru_equinox/logo.png"
+    alt="Salicru EQUINOX"
+    width="600"
+    loading="lazy"
+  >
 </p>
 
 App para [Home Assistant](https://www.home-assistant.io/) que permite integrar inversores Salicru conectados a la plataforma [EQUINOX](https://equinox.salicru.com/).
