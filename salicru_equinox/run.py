@@ -364,6 +364,14 @@ PLANT_SENSOR_CONFIG = {
         "suggested_display_precision": 3,
         "entity_id": "potencia_red",
     },
+    "plant_demand_power": {
+        "name": "Demanda planta",
+        "unit": "kW",
+        "device_class": "power",
+        "state_class": "measurement",
+        "suggested_display_precision": 3,
+        "entity_id": "demanda_planta",
+    },
     "alarm_count": {
         "name": "Número de alarmas",
         "unit": None,
@@ -1299,6 +1307,13 @@ def extract_data(
     else:
         alarm_count = 0
 
+    try:
+        plant_demand_power = float(
+            data.get("powerDailyConsumption")
+        )
+    except (TypeError, ValueError):
+        plant_demand_power = None
+
     return {
         "inverter_power": plant_power,
         "daily_generation": data.get(
@@ -1319,6 +1334,7 @@ def extract_data(
         "grid_power": data.get(
             "gridPower"
         ),
+        "plant_demand_power": plant_demand_power,
         "alarm_count": alarm_count,
         "alarms": format_alarms(
             alarms
