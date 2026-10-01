@@ -2,6 +2,18 @@
 
 Todos los cambios relevantes de este proyecto se documentan en este archivo.
 
+## [1.1.9]
+
+### Añadido
+
+* Nuevo sensor **Demanda planta**.
+* El sensor utiliza el campo `powerDailyConsumption` del recurso `/plants/{Plant ID}/realTime`.
+* El valor se publica en kW y representa la potencia instantánea que demanda la instalación en ese momento.
+
+### Mejorado
+
+* Actualizada la documentación para diferenciar **Demanda planta** de **Consumo diario**.
+
 ## [1.1.8]
 
 ### Añadido
@@ -21,7 +33,7 @@ Todos los cambios relevantes de este proyecto se documentan en este archivo.
 ## [1.1.0]
 
 * Soporte para varias plantas EQUINOX en una misma App.
-* Dispositivo independiente de Home Assistant para cada planta.
+* Dispositivo independiente de Home Assistant por cada planta.
 * Topics MQTT independientes por Plant ID.
 * Soporte para varios inversores por planta.
 * Potencia total de la planta calculada a partir de todos sus inversores.
