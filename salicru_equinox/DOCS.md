@@ -36,6 +36,7 @@ La aplicación consulta periódicamente los datos de una o varias instalaciones 
 - Intervalo de consulta configurable, con un mínimo de 60 segundos.
 - Monitorización de varias plantas desde una sola App.
 - Sensor individual de potencia para cada inversor.
+- Sensor de demanda instantánea de la planta, según el valor proporcionado por EQUINOX.
 - Sensor de estado de planta con el valor proporcionado por EQUINOX.
 - Compatible con Home Assistant OS y su sistema de Apps.
 
@@ -59,11 +60,12 @@ Actualmente se crean los siguientes sensores:
 | Energía exportada | kWh | Energía vertida a la red durante el día actual |
 | Autoconsumo | kWh | Energía solar producida y consumida directamente por la instalación |
 | Potencia red | kW | Potencia instantánea intercambiada con la red |
+| Demanda planta | kW | Potencia instantánea que demanda la instalación, según el campo `powerDailyConsumption` de EQUINOX |
 | Número de alarmas | — | Número de alarmas comunicadas por el inversor |
 | Número de inversores | — | Número de inversores detectados en los datos de tiempo real |
 | Alarmas inversor | — | Información de las alarmas comunicadas por EQUINOX |
 | Planta conectada | — | Estado de conectividad agregado de los dispositivos/gateways de la planta |
-| Estado de planta | — | Estado que EQUINOX devuelve directamente para la planta, por ejemplo `NORMAL` o `WARNING` |
+| Estado de planta | — | Estado que EQUINOX devuelve directamente para la planta, por ejemplo `NORMAL`, `WARNING`, `OFFLINE` |
 | Comunicación EQUINOX | — | Estado de comunicación entre la App y la plataforma EQUINOX |
 | Última actualización | — | Fecha y hora de la última consulta correcta |
 
@@ -71,9 +73,17 @@ Actualmente se crean los siguientes sensores:
 
 El sensor **Estado de planta** publica el valor de la propiedad `status` que devuelve EQUINOX directamente en el JSON de la planta, al mismo nivel que `id`, `name` y `devices`.
 
-La aplicación no interpreta ni transforma los estados. Por tanto, además de valores conocidos como `NORMAL` o `WARNING`, cualquier otro valor que EQUINOX pueda introducir en el futuro se conservará y se mostrará tal cual.
+La aplicación no interpreta ni transforma los estados. Por tanto, además de valores conocidos como `NORMAL`, `WARNING`, `OFFLINE`, cualquier otro valor que EQUINOX pueda introducir en el futuro se conservará y se mostrará tal cual.
 
 Esto permite observar el estado que comunica la propia plataforma sin asumir todavía el significado de todos los valores posibles.
+
+### Demanda planta
+
+El sensor **Demanda planta** muestra la potencia instantánea que está demandando la instalación según el campo `powerDailyConsumption` de la respuesta `realTime` de EQUINOX. Se expresa en **kW**.
+
+Este valor representa la demanda total de la planta en ese momento, independientemente de si la energía procede de los inversores o de la red. Por ejemplo, si los inversores producen **1 kW** y la planta demanda **3 kW**, la red aporta los **2 kW** restantes.
+
+El sensor **Demanda planta** no debe confundirse con **Consumo diario**, que es una energía acumulada expresada en **kWh**.
 
 ### Potencia de red
 
@@ -198,6 +208,7 @@ Las consultas se realizan contra la API utilizada por la propia plataforma EQUIN
 Actualmente se consultan principalmente dos recursos de la API de EQUINOX:
 
 - `/plants/{Plant ID}/realTime` para obtener los datos de producción, consumo, energía y potencia.
+- En `realTime`, el campo `powerDailyConsumption` se utiliza para el sensor **Demanda planta**.
 - `/plants/{Plant ID}` para obtener la información de la planta, incluido su `status` y el estado de conectividad de sus dispositivos.
 
 En el JSON de la planta, la propiedad `status` se encuentra al mismo nivel que `id`, `name` y `devices`. El sensor **Estado de planta** muestra ese valor directamente.
@@ -371,7 +382,7 @@ Es diferente de **Planta conectada**:
 - **Planta conectada:** indica el estado de conectividad agregado de los dispositivos/gateways que EQUINOX devuelve en `devices[].status`.
 - **Estado de planta:** muestra directamente el valor de `status` de la propia planta, sin interpretarlo ni transformarlo.
 
-Por ejemplo, si EQUINOX devuelve `NORMAL` o `WARNING`, el sensor mostrará exactamente ese texto. La aplicación no asume que `WARNING` signifique una situación concreta y tampoco limita los valores a una lista cerrada.
+Por ejemplo, si EQUINOX devuelve `NORMAL`, `WARNING`, `OFFLINE`, el sensor mostrará exactamente ese texto. La aplicación no asume que `WARNING` signifique una situación concreta y tampoco limita los valores a una lista cerrada.
 
 ---
 
@@ -481,6 +492,7 @@ salicru-equinox-ha/
     ├── CHANGELOG.md
     ├── DOCS.md
     ├── Dockerfile
+    ├── README.md
     ├── config.yaml
     ├── icon.png
     ├── logo.png
@@ -500,6 +512,10 @@ Contiene la documentación de la App que Home Assistant muestra en la pestaña *
 ### `Dockerfile`
 
 Define la imagen utilizada por la App.
+
+### `README.md`
+
+Contiene la documentación de la App que Home Assistant muestra en la pestaña **Información**. Su contenido se mantiene alineado con este README.
 
 ### `config.yaml`
 
@@ -547,6 +563,12 @@ Si propones cambios, intenta mantener la compatibilidad con las versiones actual
 ---
 
 ## 📝 Historial de versiones
+
+### 1.1.9
+
+- Añadido el sensor **Demanda planta**.
+- El sensor expone en kW el valor de `powerDailyConsumption` proporcionado por el endpoint `/plants/{Plant ID}/realTime`.
+- Actualizada la documentación para diferenciar **Demanda planta** (potencia instantánea) de **Consumo diario** (energía acumulada).
 
 ### 1.1.8
 
