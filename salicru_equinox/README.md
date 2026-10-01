@@ -36,5 +36,6 @@ La aplicación consulta periódicamente los datos de una o varias instalaciones 
 - Intervalo de consulta configurable, con un mínimo de 60 segundos.
 - Monitorización de varias plantas desde una sola App.
 - Sensor individual de potencia para cada inversor.
+- Sensor de demanda instantánea de la planta, según el valor proporcionado por EQUINOX.
 - Sensor de estado de planta con el valor proporcionado por EQUINOX.
 - Compatible con Home Assistant OS y su sistema de Apps.
